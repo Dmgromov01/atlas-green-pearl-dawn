@@ -51,3 +51,66 @@ export const icloudDeleteEvent = createServerFn({ method: "POST" })
     const { deleteIcloudEvent } = await import("./icloud.server");
     return deleteIcloudEvent(data);
   });
+
+export const icloudCreateCalendar = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      token: string;
+      name: string;
+      color: string;
+      asFamily?: boolean;
+      asPrimary?: boolean;
+      emails?: string;
+      publish?: boolean;
+      allowInvite?: boolean;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { createIcloudCalendar } = await import("./icloud.server");
+    return createIcloudCalendar(data);
+  });
+
+export const icloudUpdateCalendar = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      token: string;
+      href: string;
+      name: string;
+      color: string;
+      asFamily?: boolean;
+      asPrimary?: boolean;
+      publish?: boolean;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { updateIcloudCalendar } = await import("./icloud.server");
+    return updateIcloudCalendar(data);
+  });
+
+export const icloudDeleteCalendar = createServerFn({ method: "POST" })
+  .validator((data: { token: string; href: string }) => data)
+  .handler(async ({ data }) => {
+    const { deleteIcloudCalendar } = await import("./icloud.server");
+    return deleteIcloudCalendar(data);
+  });
+
+export const icloudShareCalendar = createServerFn({ method: "POST" })
+  .validator((data: { token: string; href: string; emails: string; write?: boolean }) => data)
+  .handler(async ({ data }) => {
+    const { shareIcloudCalendar } = await import("./icloud.server");
+    return shareIcloudCalendar(data);
+  });
+
+export const icloudUnshareCalendar = createServerFn({ method: "POST" })
+  .validator((data: { token: string; href: string; email: string }) => data)
+  .handler(async ({ data }) => {
+    const { unshareIcloudCalendar } = await import("./icloud.server");
+    return unshareIcloudCalendar(data);
+  });
+
+export const icloudCalendarInfo = createServerFn({ method: "POST" })
+  .validator((data: { token: string; href: string }) => data)
+  .handler(async ({ data }) => {
+    const { calendarInfoIcloud } = await import("./icloud.server");
+    return calendarInfoIcloud(data);
+  });

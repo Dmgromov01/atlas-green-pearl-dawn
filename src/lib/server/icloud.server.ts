@@ -4,7 +4,14 @@ import { requireHubUser } from "./hub-auth.server";
 
 const START = "https://caldav.icloud.com/";
 
-export type IcloudCal = { href: string; name: string; family: boolean };
+export type IcloudCal = { href: string; name: string; family: boolean; color: string };
+
+export type IcloudInvitee = {
+  email: string;
+  name: string;
+  status: "accepted" | "declined" | "pending";
+  access: "read" | "write";
+};
 
 type Row = {
   user_id: string;
@@ -47,6 +54,65 @@ function splitResponses(xml: string) {
   return xml.split(/<(?:[\w.-]+:)?response(?:\s[^>]*)?>/i).slice(1);
 }
 
+function escapeXml(value: string) {
+  const map: Record<string, string> = {
+    "&": "\u0026amp;",
+    "<": "\u0026lt;",
+    ">": "\u0026gt;",
+    '"': "\u0026quot;",
+    "'": "\u0026apos;",
+  };
+  return value.replace(/[&<>"']/g, (ch) => map[ch] ?? ch);
+}
+
+export function parseEmails(raw: string | null | undefined) {
+  return Array.from(
+    new Set(
+      String(raw || "")
+        .split(/[\s,;]+/)
+        .map((s) => s.trim().toLowerCase())
+        .filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)),
+    ),
+  ).slice(0, 12);
+}
+
+export function normalizeColor(raw: string | null | undefined) {
+  const hex = String(raw || "")
+    .replace(/#/g, "")
+    .replace(/[^0-9a-f]/gi, "");
+  if (hex.length >= 6) return `#${hex.slice(0, 6).toUpperCase()}`;
+  return "#FF3B30";
+}
+
+function colorForIcloud(raw: string) {
+  const hex = normalizeColor(raw);
+  return `${hex}FF`;
+}
+
+function parseColor(block: string) {
+  const inner = xmlInner(block, "calendar-color").replace(/<[^>]+>/g, "").trim();
+  const attr = block.match(/calendar-color[^>]*\brgb="([^"]+)"/i)?.[1] ?? "";
+  return normalizeColor(inner || attr);
+}
+
+function parseInvitees(xml: string): IcloudInvitee[] {
+  const out: IcloudInvitee[] = [];
+  const parts = xml.split(/<(?:[\w.-]+:)?user(?:\s[^>]*)?>/i).slice(1);
+  for (const block of parts) {
+    const href = xmlHref(block).replace(/^mailto:/i, "").trim().toLowerCase();
+    if (!href.includes("@")) continue;
+    const name = xmlInner(block, "common-name").replace(/<[^>]+>/g, "").trim() || href;
+    const status = /invite-accepted/i.test(block)
+      ? "accepted"
+      : /invite-declined/i.test(block)
+        ? "declined"
+        : "pending";
+    const access = /read-write/i.test(block) ? "write" : "read";
+    out.push({ email: href, name, status, access });
+  }
+  return out;
+}
+
 async function dav(url: string, appleId: string, password: string, method: string, body?: string, extra?: Record<string, string>) {
   const res = await fetch(url, {
     method,
@@ -61,8 +127,15 @@ async function dav(url: string, appleId: string, password: string, method: strin
     signal: AbortSignal.timeout(20000),
   });
   const text = await res.text();
-  if (res.status === 401 || res.status === 403) {
+  if (res.status === 401) {
     throw new Error("Apple ID отклонён. Нужен пароль приложения, не обычный пароль iCloud.");
+  }
+  if (res.status === 403) {
+    const root = /caldav\.icloud\.com\/?$/i.test(url);
+    if (root && method === "PROPFIND") {
+      throw new Error("Apple ID отклонён. Нужен пароль приложения, не обычный пароль iCloud.");
+    }
+    throw new Error("iCloud не разрешил это. Календарь «Семья» из Семейного доступа меняется на iPhone.");
   }
   if (!res.ok && res.status !== 207 && res.status !== 201 && res.status !== 204 && res.status !== 404) {
     throw new Error(text.slice(0, 160) || `iCloud ${res.status}`);
@@ -119,6 +192,7 @@ async function listCalendars(homeUrl: string, appleId: string, password: string)
       href: absUrl(origin + "/", href),
       name,
       family: /семь|family/i.test(name) || types.includes("shared-owner"),
+      color: parseColor(block),
     });
   }
   return out;
@@ -197,6 +271,145 @@ async function creds(userId: string): Promise<Creds | null> {
   return value;
 }
 
+async function requireCreds(token: string) {
+  const { user } = await requireHubUser(token);
+  const c = await creds(user.id);
+  if (!c) throw new Error("Сначала подключите iCloud");
+  const home = c.home || (await discover(c.appleId, c.password)).homeUrl;
+  return { user, c: { ...c, home } };
+}
+
+async function propPatchCalendar(
+  href: string,
+  appleId: string,
+  password: string,
+  patch: { name?: string; color?: string },
+) {
+  const props: string[] = [];
+  if (patch.name) props.push(`<D:displayname>${escapeXml(patch.name)}</D:displayname>`);
+  if (patch.color) {
+    const color = colorForIcloud(patch.color);
+    props.push(
+      `<ICAL:calendar-color xmlns:ICAL="http://apple.com/ns/ical/">${escapeXml(color)}</ICAL:calendar-color>`,
+    );
+  }
+  if (!props.length) return;
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<D:propertyupdate xmlns:D="DAV:">
+  <D:set>
+    <D:prop>
+      ${props.join("\n      ")}
+    </D:prop>
+  </D:set>
+</D:propertyupdate>`;
+  await dav(href, appleId, password, "PROPPATCH", body, { depth: "0" });
+}
+
+async function mkCalendar(homeUrl: string, appleId: string, password: string, name: string, color: string) {
+  const uuid = crypto.randomUUID().toUpperCase();
+  const href = `${homeUrl.replace(/\/?$/, "/")}${uuid}/`;
+  const color8 = colorForIcloud(color);
+  const mkCalBody = `<?xml version="1.0" encoding="UTF-8"?>
+<C:mkcalendar xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:ICAL="http://apple.com/ns/ical/">
+  <D:set>
+    <D:prop>
+      <D:displayname>${escapeXml(name)}</D:displayname>
+      <ICAL:calendar-color>${escapeXml(color8)}</ICAL:calendar-color>
+      <C:supported-calendar-component-set>
+        <C:comp name="VEVENT"/>
+      </C:supported-calendar-component-set>
+    </D:prop>
+  </D:set>
+</C:mkcalendar>`;
+  try {
+    await dav(href, appleId, password, "MKCALENDAR", mkCalBody, { depth: "0", overwrite: "F" });
+  } catch {
+    const mkColBody = `<?xml version="1.0" encoding="UTF-8"?>
+<D:mkcol xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:set>
+    <D:prop>
+      <D:resourcetype>
+        <D:collection/>
+        <C:calendar/>
+      </D:resourcetype>
+      <D:displayname>${escapeXml(name)}</D:displayname>
+    </D:prop>
+  </D:set>
+</D:mkcol>`;
+    try {
+      await dav(href, appleId, password, "MKCOL", mkColBody, { depth: "0", overwrite: "F" });
+    } catch {
+      await dav(href, appleId, password, "MKCOL", undefined, { depth: "0", overwrite: "F" });
+    }
+  }
+  await propPatchCalendar(href, appleId, password, { name, color }).catch(() => undefined);
+  return href;
+}
+
+async function shareCal(href: string, appleId: string, password: string, emails: string[], write: boolean) {
+  if (!emails.length) return;
+  const sets = emails
+    .map(
+      (email) => `
+  <CS:set>
+    <D:href>mailto:${escapeXml(email)}</D:href>
+    <CS:common-name>${escapeXml(email.split("@")[0] || email)}</CS:common-name>
+    <CS:summary>Календарь</CS:summary>
+    ${write ? "<CS:read-write/>" : "<CS:read/>"}
+  </CS:set>`,
+    )
+    .join("");
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<CS:share xmlns:CS="http://calendarserver.org/ns/" xmlns:D="DAV:">
+${sets}
+</CS:share>`;
+  await dav(href, appleId, password, "POST", body);
+}
+
+async function unshareCal(href: string, appleId: string, password: string, email: string) {
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<CS:share xmlns:CS="http://calendarserver.org/ns/" xmlns:D="DAV:">
+  <CS:remove>
+    <D:href>mailto:${escapeXml(email)}</D:href>
+  </CS:remove>
+</CS:share>`;
+  await dav(href, appleId, password, "POST", body);
+}
+
+async function setPublish(href: string, appleId: string, password: string, on: boolean) {
+  const tag = on ? "publish-calendar" : "unpublish-calendar";
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<CS:${tag} xmlns:CS="http://calendarserver.org/ns/"/>`;
+  await dav(href, appleId, password, "POST", body);
+}
+
+async function markRoles(userId: string, href: string, asFamily?: boolean, asPrimary?: boolean) {
+  if (!asFamily && !asPrimary) return;
+  const sql = await getSql();
+  if (asFamily && asPrimary) {
+    await sql`
+      update hub_icloud
+      set family_href = ${href}, primary_href = ${href}, updated_at = now()
+      where user_id = ${userId}
+    `;
+    return;
+  }
+  if (asFamily) {
+    await sql`
+      update hub_icloud
+      set family_href = ${href}, updated_at = now()
+      where user_id = ${userId}
+    `;
+  }
+  if (asPrimary) {
+    await sql`
+      update hub_icloud
+      set primary_href = ${href}, updated_at = now()
+      where user_id = ${userId}
+    `;
+  }
+}
+
 export async function saveIcloud(data: { token: string; appleId: string; password: string }) {
   const { user } = await requireHubUser(data.token);
   const appleId = data.appleId.trim();
@@ -273,6 +486,114 @@ export async function statusIcloud(token: string) {
       error: err instanceof Error ? err.message : "iCloud недоступен",
     };
   }
+}
+
+export async function createIcloudCalendar(data: {
+  token: string;
+  name: string;
+  color: string;
+  asFamily?: boolean;
+  asPrimary?: boolean;
+  emails?: string;
+  publish?: boolean;
+  allowInvite?: boolean;
+}) {
+  const { user, c } = await requireCreds(data.token);
+  const name = data.name.trim().slice(0, 80);
+  if (!name) throw new Error("Напишите название календаря");
+  const color = normalizeColor(data.color);
+  const href = await mkCalendar(c.home!, c.appleId, c.password, name, color);
+  const emails = parseEmails(data.emails);
+  if (emails.length) {
+    await shareCal(href, c.appleId, c.password, emails, data.allowInvite !== false).catch((err) => {
+      throw new Error(
+        `Календарь создан, но приглашения не ушли: ${err instanceof Error ? err.message : "ошибка шаринга"}`,
+      );
+    });
+  }
+  if (data.publish) {
+    await setPublish(href, c.appleId, c.password, true).catch(() => undefined);
+  }
+  const asFamily = data.asFamily || /семь|family/i.test(name);
+  await markRoles(user.id, href, asFamily, data.asPrimary);
+  const calendars = await listCalendars(c.home!, c.appleId, c.password);
+  return { ok: true as const, href, calendars };
+}
+
+export async function updateIcloudCalendar(data: {
+  token: string;
+  href: string;
+  name: string;
+  color: string;
+  asFamily?: boolean;
+  asPrimary?: boolean;
+  publish?: boolean;
+}) {
+  const { user, c } = await requireCreds(data.token);
+  const name = data.name.trim().slice(0, 80);
+  if (!name) throw new Error("Напишите название календаря");
+  if (!data.href) throw new Error("Календарь не выбран");
+  await propPatchCalendar(data.href, c.appleId, c.password, { name, color: normalizeColor(data.color) });
+  if (typeof data.publish === "boolean") {
+    await setPublish(data.href, c.appleId, c.password, data.publish).catch(() => undefined);
+  }
+  await markRoles(user.id, data.href, data.asFamily, data.asPrimary);
+  const calendars = await listCalendars(c.home!, c.appleId, c.password);
+  return { ok: true as const, calendars };
+}
+
+export async function deleteIcloudCalendar(data: { token: string; href: string }) {
+  const { user, c } = await requireCreds(data.token);
+  if (!data.href) throw new Error("Календарь не выбран");
+  await dav(data.href, c.appleId, c.password, "DELETE");
+  const sql = await getSql();
+  await sql`
+    update hub_icloud
+    set
+      primary_href = case when primary_href = ${data.href} then null else primary_href end,
+      family_href = case when family_href = ${data.href} then null else family_href end,
+      updated_at = now()
+    where user_id = ${user.id}
+  `;
+  const calendars = await listCalendars(c.home!, c.appleId, c.password);
+  return { ok: true as const, calendars };
+}
+
+export async function shareIcloudCalendar(data: { token: string; href: string; emails: string; write?: boolean }) {
+  const { c } = await requireCreds(data.token);
+  const emails = parseEmails(data.emails);
+  if (!emails.length) throw new Error("Укажите почту iCloud или Apple ID");
+  await shareCal(data.href, c.appleId, c.password, emails, data.write !== false);
+  return { ok: true as const, emails };
+}
+
+export async function unshareIcloudCalendar(data: { token: string; href: string; email: string }) {
+  const { c } = await requireCreds(data.token);
+  const email = data.email.trim().toLowerCase();
+  if (!email.includes("@")) throw new Error("Некорректная почта");
+  await unshareCal(data.href, c.appleId, c.password, email);
+  return { ok: true as const };
+}
+
+export async function calendarInfoIcloud(data: { token: string; href: string }) {
+  const { c } = await requireCreds(data.token);
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<D:propfind xmlns:D="DAV:" xmlns:CS="http://calendarserver.org/ns/" xmlns:ICAL="http://apple.com/ns/ical/">
+  <D:prop>
+    <D:displayname/>
+    <ICAL:calendar-color/>
+    <CS:invite/>
+    <CS:publish-url/>
+  </D:prop>
+</D:propfind>`;
+  const res = await dav(data.href, c.appleId, c.password, "PROPFIND", body, { depth: "0" });
+  const publishBlock = xmlInner(res.text, "publish-url");
+  return {
+    name: xmlInner(res.text, "displayname").replace(/<[^>]+>/g, "").trim(),
+    color: parseColor(res.text),
+    invitees: parseInvitees(res.text),
+    publishUrl: xmlHref(publishBlock) || "",
+  };
 }
 
 function icsUtc(iso: string) {
