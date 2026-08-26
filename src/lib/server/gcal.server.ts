@@ -18,7 +18,13 @@ type GcalRow = {
   family_emails: string | null;
 };
 
-export type GcalListItem = { id: string; summary: string; primary: boolean };
+export type GcalListItem = {
+  id: string;
+  summary: string;
+  primary: boolean;
+  color: string;
+  accessRole: string;
+};
 
 export function parseEmails(raw: string | null | undefined) {
   return Array.from(
@@ -219,20 +225,40 @@ export async function disconnectGcal(token: string) {
 }
 
 async function listCalendarsWith(access: string): Promise<GcalListItem[]> {
-  const json = await googleJson(`${CAL_API}/users/me/calendarList?maxResults=50`, {
+  const json = await googleJson(`${CAL_API}/users/me/calendarList?maxResults=100`, {
     headers: { authorization: `Bearer ${access}` },
   });
   const items = Array.isArray(json.items) ? json.items : [];
   return items
     .map((raw) => {
-      const it = raw as { id?: string; summary?: string; primary?: boolean };
+      const it = raw as {
+        id?: string;
+        summary?: string;
+        primary?: boolean;
+        backgroundColor?: string;
+        hidden?: boolean;
+        accessRole?: string;
+      };
+      if (it.hidden) return null;
+      const id = String(it.id || "");
+      if (!id) return null;
       return {
-        id: String(it.id || ""),
+        id,
         summary: String(it.summary || it.id || "Календарь"),
         primary: Boolean(it.primary),
+        color: normalizeHex(it.backgroundColor) || "#4285F4",
+        accessRole: String(it.accessRole || "reader"),
       };
     })
-    .filter((c) => c.id);
+    .filter((c): c is GcalListItem => Boolean(c));
+}
+
+function normalizeHex(raw?: string) {
+  const hex = String(raw || "")
+    .replace(/^#/, "")
+    .replace(/[^0-9a-f]/gi, "");
+  if (hex.length >= 6) return `#${hex.slice(0, 6).toUpperCase()}`;
+  return "";
 }
 
 export async function statusGcal(token: string) {
@@ -380,4 +406,234 @@ export async function shareFamilyCalendar(data: { token: string; emails: string 
     where user_id = ${user.id}
   `;
   return { ok: true as const, emails };
+}
+
+export type GcalInvitee = {
+  email: string;
+  name: string;
+  status: "accepted" | "declined" | "pending";
+  access: "read" | "write";
+};
+
+async function patchColor(access: string, id: string, color: string) {
+  const hex = normalizeHex(color) || "#4285F4";
+  await googleJson(`${CAL_API}/users/me/calendarList/${encodeURIComponent(id)}?colorRgbFormat=true`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${access}`, "content-type": "application/json" },
+    body: JSON.stringify({ backgroundColor: hex, selected: true }),
+  });
+}
+
+async function shareWith(access: string, id: string, emails: string[], write: boolean) {
+  const encoded = encodeURIComponent(id);
+  const role = write ? "writer" : "reader";
+  for (const email of emails) {
+    await googleJson(`${CAL_API}/calendars/${encoded}/acl?sendNotifications=true`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${access}`, "content-type": "application/json" },
+      body: JSON.stringify({ role, scope: { type: "user", value: email } }),
+    });
+  }
+}
+
+async function setPublic(access: string, id: string, publish: boolean) {
+  const encoded = encodeURIComponent(id);
+  if (publish) {
+    await googleJson(`${CAL_API}/calendars/${encoded}/acl?sendNotifications=false`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${access}`, "content-type": "application/json" },
+      body: JSON.stringify({ role: "reader", scope: { type: "default" } }),
+    }).catch(() => undefined);
+    return;
+  }
+  const res = await fetch(`${CAL_API}/calendars/${encoded}/acl/default`, {
+    method: "DELETE",
+    headers: { authorization: `Bearer ${access}` },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok && res.status !== 404 && res.status !== 410) {
+    throw new Error("Не удалось скрыть публичную ссылку");
+  }
+}
+
+async function assignRoles(userId: string, data: { id: string; asFamily?: boolean; asPrimary?: boolean }) {
+  const sql = await getSql();
+  if (data.asFamily) {
+    await sql`update hub_gcal set family_id = ${data.id}, updated_at = now() where user_id = ${userId}`;
+  }
+  if (data.asPrimary) {
+    await sql`update hub_gcal set primary_id = ${data.id}, updated_at = now() where user_id = ${userId}`;
+  }
+}
+
+export async function createGcalCalendar(data: {
+  token: string;
+  name: string;
+  color: string;
+  asFamily?: boolean;
+  asPrimary?: boolean;
+  emails?: string;
+  publish?: boolean;
+}) {
+  const { user } = await requireHubUser(data.token);
+  const creds = await credsFor(user.id);
+  if (!creds) throw new Error("Сначала подключите Google");
+  const name = data.name.trim().slice(0, 80);
+  if (!name) throw new Error("Название календаря");
+  const json = await googleJson(`${CAL_API}/calendars`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${creds.access}`, "content-type": "application/json" },
+    body: JSON.stringify({ summary: name, timeZone: "Europe/Moscow" }),
+  });
+  const id = String(json.id || "");
+  if (!id) throw new Error("Google не создал календарь");
+  await patchColor(creds.access, id, data.color).catch(() => undefined);
+  const emails = parseEmails(data.emails);
+  if (emails.length) {
+    await shareWith(creds.access, id, emails.filter((e) => e !== (creds.email || "").toLowerCase()), true);
+  }
+  if (data.publish) await setPublic(creds.access, id, true).catch(() => undefined);
+  await assignRoles(user.id, {
+    id,
+    asFamily: data.asFamily || /семь|family/i.test(name),
+    asPrimary: data.asPrimary,
+  });
+  if (emails.length) {
+    const sql = await getSql();
+    await sql`
+      update hub_gcal
+      set family_emails = ${emails.join(",")}, updated_at = now()
+      where user_id = ${user.id}
+    `;
+  }
+  const calendars = await listCalendarsWith(creds.access);
+  return { ok: true as const, id, calendars };
+}
+
+export async function updateGcalCalendar(data: {
+  token: string;
+  id: string;
+  name: string;
+  color: string;
+  asFamily?: boolean;
+  asPrimary?: boolean;
+  publish?: boolean;
+}) {
+  const { user } = await requireHubUser(data.token);
+  const creds = await credsFor(user.id);
+  if (!creds) throw new Error("Сначала подключите Google");
+  const name = data.name.trim().slice(0, 80);
+  if (!name) throw new Error("Название календаря");
+  const encoded = encodeURIComponent(data.id);
+  await googleJson(`${CAL_API}/calendars/${encoded}`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${creds.access}`, "content-type": "application/json" },
+    body: JSON.stringify({ summary: name }),
+  });
+  await patchColor(creds.access, data.id, data.color).catch(() => undefined);
+  if (typeof data.publish === "boolean") {
+    await setPublic(creds.access, data.id, data.publish).catch(() => undefined);
+  }
+  await assignRoles(user.id, data);
+  const calendars = await listCalendarsWith(creds.access);
+  return { ok: true as const, calendars };
+}
+
+export async function deleteGcalCalendar(data: { token: string; id: string }) {
+  const { user } = await requireHubUser(data.token);
+  const creds = await credsFor(user.id);
+  if (!creds) throw new Error("Сначала подключите Google");
+  if (data.id === creds.email || data.id === "primary") {
+    throw new Error("Основной календарь Google удалить нельзя");
+  }
+  const res = await fetch(`${CAL_API}/calendars/${encodeURIComponent(data.id)}`, {
+    method: "DELETE",
+    headers: { authorization: `Bearer ${creds.access}` },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok && res.status !== 204 && res.status !== 404 && res.status !== 410) {
+    const text = await res.text();
+    throw new Error(text.slice(0, 160) || `Google ${res.status}`);
+  }
+  const sql = await getSql();
+  await sql`
+    update hub_gcal
+    set
+      primary_id = case when primary_id = ${data.id} then 'primary' else primary_id end,
+      family_id = case when family_id = ${data.id} then null else family_id end,
+      updated_at = now()
+    where user_id = ${user.id}
+  `;
+  const calendars = await listCalendarsWith(creds.access).catch(() => [] as GcalListItem[]);
+  return { ok: true as const, calendars };
+}
+
+export async function shareGcalCalendar(data: {
+  token: string;
+  id: string;
+  emails: string;
+  write?: boolean;
+}) {
+  const { user } = await requireHubUser(data.token);
+  const creds = await credsFor(user.id);
+  if (!creds) throw new Error("Сначала подключите Google");
+  const emails = parseEmails(data.emails).filter((e) => e !== (creds.email || "").toLowerCase());
+  if (!emails.length) throw new Error("Укажите почту");
+  await shareWith(creds.access, data.id, emails, data.write !== false);
+  const info = await calendarInfoGcal({ token: data.token, id: data.id });
+  return { ok: true as const, invitees: info.invitees };
+}
+
+export async function unshareGcalCalendar(data: { token: string; id: string; email: string }) {
+  const { user } = await requireHubUser(data.token);
+  const creds = await credsFor(user.id);
+  if (!creds) throw new Error("Сначала подключите Google");
+  const ruleId = `user:${data.email.trim().toLowerCase()}`;
+  const res = await fetch(`${CAL_API}/calendars/${encodeURIComponent(data.id)}/acl/${encodeURIComponent(ruleId)}`, {
+    method: "DELETE",
+    headers: { authorization: `Bearer ${creds.access}` },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok && res.status !== 204 && res.status !== 404 && res.status !== 410) {
+    throw new Error("Не удалось убрать человека");
+  }
+  const info = await calendarInfoGcal({ token: data.token, id: data.id });
+  return { ok: true as const, invitees: info.invitees };
+}
+
+export async function calendarInfoGcal(data: { token: string; id: string }) {
+  const { user } = await requireHubUser(data.token);
+  const creds = await credsFor(user.id);
+  if (!creds) throw new Error("Сначала подключите Google");
+  const json = await googleJson(`${CAL_API}/calendars/${encodeURIComponent(data.id)}/acl`, {
+    headers: { authorization: `Bearer ${creds.access}` },
+  });
+  const items = Array.isArray(json.items) ? json.items : [];
+  const invitees: GcalInvitee[] = [];
+  let publish = false;
+  for (const raw of items) {
+    const it = raw as {
+      role?: string;
+      scope?: { type?: string; value?: string };
+    };
+    const type = String(it.scope?.type || "");
+    if (type === "default") {
+      publish = true;
+      continue;
+    }
+    if (type !== "user") continue;
+    const email = String(it.scope?.value || "").toLowerCase();
+    if (!email || email === (creds.email || "").toLowerCase()) continue;
+    if (it.role === "owner") continue;
+    invitees.push({
+      email,
+      name: email.split("@")[0] || email,
+      status: "accepted",
+      access: it.role === "writer" || it.role === "owner" ? "write" : "read",
+    });
+  }
+  const publishUrl = publish
+    ? `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(data.id)}`
+    : "";
+  return { invitees, publish, publishUrl };
 }

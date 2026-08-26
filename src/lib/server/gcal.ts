@@ -70,3 +70,65 @@ export const gcalShareFamily = createServerFn({ method: "POST" })
     const { shareFamilyCalendar } = await import("./gcal.server");
     return shareFamilyCalendar(data);
   });
+
+export const gcalCreateCalendar = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      token: string;
+      name: string;
+      color: string;
+      asFamily?: boolean;
+      asPrimary?: boolean;
+      emails?: string;
+      publish?: boolean;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { createGcalCalendar } = await import("./gcal.server");
+    return createGcalCalendar(data);
+  });
+
+export const gcalUpdateCalendar = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      token: string;
+      id: string;
+      name: string;
+      color: string;
+      asFamily?: boolean;
+      asPrimary?: boolean;
+      publish?: boolean;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { updateGcalCalendar } = await import("./gcal.server");
+    return updateGcalCalendar(data);
+  });
+
+export const gcalDeleteCalendar = createServerFn({ method: "POST" })
+  .validator((data: { token: string; id: string }) => data)
+  .handler(async ({ data }) => {
+    const { deleteGcalCalendar } = await import("./gcal.server");
+    return deleteGcalCalendar(data);
+  });
+
+export const gcalShareCalendar = createServerFn({ method: "POST" })
+  .validator((data: { token: string; id: string; emails: string; write?: boolean }) => data)
+  .handler(async ({ data }) => {
+    const { shareGcalCalendar } = await import("./gcal.server");
+    return shareGcalCalendar(data);
+  });
+
+export const gcalUnshareCalendar = createServerFn({ method: "POST" })
+  .validator((data: { token: string; id: string; email: string }) => data)
+  .handler(async ({ data }) => {
+    const { unshareGcalCalendar } = await import("./gcal.server");
+    return unshareGcalCalendar(data);
+  });
+
+export const gcalCalendarInfo = createServerFn({ method: "POST" })
+  .validator((data: { token: string; id: string }) => data)
+  .handler(async ({ data }) => {
+    const { calendarInfoGcal } = await import("./gcal.server");
+    return calendarInfoGcal(data);
+  });
