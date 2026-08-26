@@ -111,12 +111,22 @@ export function ChatView() {
   }, [search.q, token]);
 
   const aiOff = user?.aiMode === "off";
+  const agentLabel =
+    aiOff
+      ? "включите AI в настройках"
+      : user?.aiMode === "byok" && user.byokProvider === "openai"
+        ? "OpenAI"
+        : user?.aiMode === "byok" && user.byokProvider === "anthropic"
+          ? "Anthropic"
+          : user?.aiMode === "byok" && user.byokProvider === "custom"
+            ? "свой шлюз"
+            : "OpenClaw";
 
   return (
     <AppShell>
       <Header
         title="Агент"
-        subtitle={aiOff ? "включите AI в настройках" : "OpenClaw"}
+        subtitle={agentLabel}
         backTo="/"
         right={
           messages.length ? (

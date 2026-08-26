@@ -52,7 +52,7 @@ export function AiAccessCard() {
 
   const probe = useMutation({
     mutationFn: () => hubAiProbe({ data: { token } }),
-    onSuccess: (r) => toast(`Шлюз отвечает · ${r.source}`),
+    onSuccess: (r) => toast(`Шлюз отвечает · ${r.provider || r.source}`),
     onError: (e: Error) => toast.error(e.message),
   });
 

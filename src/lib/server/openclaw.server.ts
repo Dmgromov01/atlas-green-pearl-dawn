@@ -1,5 +1,6 @@
 import { getSql } from "@/lib/db";
 import { assertPublicHttps } from "@/lib/sanitize";
+import { rateLimit } from "./limit";
 import type { ByokProvider, KeySource } from "@/lib/hub/identity";
 import { audit, requireHubUser, userById } from "./hub-auth.server";
 import { decryptUserKey } from "./hub-keys.server";
@@ -10,6 +11,8 @@ type Creds = {
   baseUrl: string;
   apiKey: string;
 };
+
+type ChatTurn = { role: "user" | "assistant"; content: string };
 
 function todayUtc() {
   return new Date().toISOString().slice(0, 10);
@@ -27,12 +30,33 @@ function envToken() {
   return (process.env.OPENCLAW_GATEWAY_TOKEN || process.env.OPENCLAW_TOKEN || "").trim();
 }
 
+function modelFor(provider: ByokProvider) {
+  if (provider === "openai") return process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  if (provider === "anthropic") return process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+  return process.env.OPENCLAW_MODEL || "openclaw/default";
+}
+
+function labelFor(provider: ByokProvider) {
+  if (provider === "openai") return "OpenAI";
+  if (provider === "anthropic") return "Anthropic";
+  if (provider === "custom") return "шлюз";
+  return "OpenClaw";
+}
+
 async function resetQuotaIfNeeded(userId: string, resetOn: string | null, used: number) {
   const today = todayUtc();
   if (resetOn === today) return used;
   const sql = await getSql();
   await sql`update hub_users set quota_used = 0, quota_reset_on = ${today} where id = ${userId}`;
   return 0;
+}
+
+async function byokBaseUrl(userId: string) {
+  const sql = await getSql();
+  const extra = await sql<{ byok_base_url: string | null }>`
+    select byok_base_url from hub_users where id = ${userId} limit 1
+  `;
+  return extra[0]?.byok_base_url ?? null;
 }
 
 export async function resolveAiCredentials(userId: string): Promise<Creds> {
@@ -43,11 +67,7 @@ export async function resolveAiCredentials(userId: string): Promise<Creds> {
     const key = await decryptUserKey(userId);
     if (!key) throw new Error("Ключ не удалось расшифровать");
     const provider = (user.byok_provider as ByokProvider) || "openai";
-    const sql = await getSql();
-    const extra = await sql<{ byok_base_url: string | null }>`
-      select byok_base_url from hub_users where id = ${userId} limit 1
-    `;
-    const custom = extra[0]?.byok_base_url;
+    const custom = await byokBaseUrl(userId);
     const baseUrl =
       provider === "anthropic"
         ? "https://api.anthropic.com"
@@ -78,8 +98,6 @@ async function bumpQuota(userId: string) {
   await sql`update hub_users set quota_used = quota_used + 1 where id = ${userId}`;
 }
 
-type ChatTurn = { role: "user" | "assistant"; content: string };
-
 async function completeOpenAi(creds: Creds, system: string, turns: ChatTurn[], maxTokens: number) {
   const res = await fetch(`${creds.baseUrl}/v1/chat/completions`, {
     method: "POST",
@@ -88,7 +106,7 @@ async function completeOpenAi(creds: Creds, system: string, turns: ChatTurn[], m
       authorization: `Bearer ${creds.apiKey}`,
     },
     body: JSON.stringify({
-      model: process.env.OPENCLAW_MODEL || "openclaw/default",
+      model: modelFor(creds.provider),
       max_tokens: maxTokens,
       messages: [{ role: "system", content: system }, ...turns],
     }),
@@ -96,9 +114,10 @@ async function completeOpenAi(creds: Creds, system: string, turns: ChatTurn[], m
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    if (res.status === 401 || res.status === 403) throw new Error("Ключ отклонён шлюзом");
-    if (res.status === 429 || res.status === 402) throw new Error("Лимит шлюза. Попробуйте позже.");
-    throw new Error(body.slice(0, 180) || `OpenClaw ${res.status}`);
+    const name = labelFor(creds.provider);
+    if (res.status === 401 || res.status === 403) throw new Error(`Ключ отклонён (${name})`);
+    if (res.status === 429 || res.status === 402) throw new Error(`Лимит ${name}. Попробуйте позже.`);
+    throw new Error(body.slice(0, 180) || `${name} ${res.status}`);
   }
   const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   return json.choices?.[0]?.message?.content?.trim() ?? "";
@@ -113,7 +132,7 @@ async function completeAnthropic(creds: Creds, system: string, turns: ChatTurn[]
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-5",
+      model: modelFor("anthropic"),
       max_tokens: maxTokens,
       system,
       messages: turns.map((t) => ({ role: t.role, content: t.content })),
@@ -139,7 +158,7 @@ async function runComplete(userId: string, system: string, turns: ChatTurn[], ma
       keySource: creds.source,
       detail: creds.provider,
     });
-    return { text, source: creds.source };
+    return { text, source: creds.source, provider: creds.provider };
   } catch (err) {
     await audit({
       userId,
@@ -155,11 +174,10 @@ export async function completeViaUser(userId: string, prompt: string, system: st
   return runComplete(userId, system, [{ role: "user", content: prompt }], 320);
 }
 
-export async function chatViaUser(
-  userId: string,
-  messages: ChatTurn[],
-  system: string,
-) {
+export async function chatViaUser(userId: string, messages: ChatTurn[], system: string) {
+  if (!rateLimit(`ai:chat:${userId}`, 40, 60 * 60_000)) {
+    throw new Error("Слишком много запросов к агенту. Подождите немного.");
+  }
   const turns = messages.slice(-12).filter((m) => m.content.trim());
   if (!turns.length) throw new Error("Пустое сообщение");
   return runComplete(userId, system, turns, 700);
@@ -172,5 +190,5 @@ export async function probeAiHub(token: string) {
     "Ответь одним словом: ок",
     "Короткий технический пинг. Одно слово.",
   );
-  return { ok: Boolean(out.text), source: out.source };
+  return { ok: Boolean(out.text), source: out.source, provider: out.provider };
 }

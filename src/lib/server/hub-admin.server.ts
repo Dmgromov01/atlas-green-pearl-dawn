@@ -1,5 +1,5 @@
 import { getSql } from "@/lib/db";
-import { notifyTelegram } from "@/lib/telegram/init-data";
+import { notifyTelegram } from "@/lib/telegram/bot";
 import { audit, requireHubUser } from "./hub-auth.server";
 import type { HubRole } from "@/lib/hub/identity";
 

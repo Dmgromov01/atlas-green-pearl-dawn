@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { haptic } from "@/lib/haptic";
+import { useTelegramBack } from "@/lib/telegram/webapp";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/brand-mark";
 import { APP_NAME } from "@/lib/brand";
@@ -20,9 +21,10 @@ export function Header({
   brand?: boolean;
 }) {
   const navigate = useNavigate();
+  const tgBack = useTelegramBack(backTo);
   return (
     <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-2 bg-background px-4 pt-[env(safe-area-inset-top)] sm:px-6">
-      {backTo ? (
+      {backTo && !tgBack ? (
         <Button
           variant="secondary"
           size="icon-sm"

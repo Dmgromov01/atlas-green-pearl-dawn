@@ -1,46 +1,32 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { hubLogin, hubMe } from "@/lib/server/hub-auth";
 import { deviceId, readHubToken, useHub } from "@/lib/stores/hub";
 import { useSettings } from "@/lib/stores/settings";
-import { getWebApp, tryBiometric } from "@/lib/telegram/webapp";
+import {
+  applyTelegramChrome,
+  bootMiniApp,
+  loadTelegramSdk,
+  startPath,
+  tryBiometric,
+} from "@/lib/telegram/webapp";
 import { HubRuntime } from "@/components/hub-runtime";
 
-function loadTelegramScript() {
-  if (typeof document === "undefined") return Promise.resolve();
-  if (getWebApp()) return Promise.resolve();
-  const existing = document.getElementById("tg-webapp-sdk");
-  if (existing) {
-    return new Promise<void>((resolve) => {
-      existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => resolve(), { once: true });
-      setTimeout(() => resolve(), 800);
-    });
-  }
-  return new Promise<void>((resolve) => {
-    const s = document.createElement("script");
-    s.id = "tg-webapp-sdk";
-    s.src = "https://telegram.org/js/telegram-web-app.js";
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => resolve();
-    document.head.appendChild(s);
-    setTimeout(() => resolve(), 1200);
-  });
-}
-
 export function TelegramBoot() {
+  const navigate = useNavigate();
   const setSession = useHub((s) => s.setSession);
   const setLoginError = useHub((s) => s.setLoginError);
   const name = useSettings((s) => s.displayName);
+  const onboarded = useSettings((s) => s.onboarded);
+  const jumped = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
-      await loadTelegramScript();
+      await loadTelegramSdk();
       if (cancelled) return;
-      const wa = getWebApp();
-      wa?.ready();
-      wa?.expand();
+      const wa = bootMiniApp();
+      applyTelegramChrome(wa?.colorScheme === "dark");
 
       const existing = readHubToken();
       if (existing) {
@@ -76,6 +62,14 @@ export function TelegramBoot() {
       cancelled = true;
     };
   }, [name, setSession, setLoginError]);
+
+  useEffect(() => {
+    if (!onboarded || jumped.current) return;
+    const path = startPath();
+    if (!path) return;
+    jumped.current = true;
+    void navigate({ to: path });
+  }, [onboarded, navigate]);
 
   return <HubRuntime />;
 }

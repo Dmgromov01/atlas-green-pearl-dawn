@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { getSql } from "@/lib/db";
-import { notifyTelegram } from "@/lib/telegram/init-data";
+import { notifyTelegram } from "@/lib/telegram/bot";
 import { requireHubUser } from "./hub-auth.server";
 
 function uid() {

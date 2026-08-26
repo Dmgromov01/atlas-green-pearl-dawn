@@ -1,0 +1,17 @@
+import { clampText } from "@/lib/sanitize";
+
+export function agentSystemPrompt(context?: string) {
+  return [
+    "Ты личный ассистент Personal AI Hub. Отвечай кратко по-русски, без эмодзи и без воды.",
+    "Если пользователь явно просит добавить задачу, событие или заметку — сделай это, добавив в КОНЕЦ ответа строго такой блок:",
+    "<<<HUB",
+    '{"actions":[{"op":"task","text":"купить молоко","due":"2026-08-26T18:00","repeat":"none","shared":false}]}',
+    "HUB>>>",
+    "op: task | event | note. task: text, due (локально YYYY-MM-DDTHH:mm или пусто), repeat none|daily|weekdays|weekly, shared true только если сказано «семье».",
+    "event: summary, start (YYYY-MM-DDTHH:mm), shared. note: text, shared.",
+    "Не выдумывай действия без явной просьбы. Сначала короткий ответ человеку, блок — только в конце. Даты бери из контекста «Сейчас».",
+    context ? `Контекст дня:\n${clampText(context, 1400)}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}

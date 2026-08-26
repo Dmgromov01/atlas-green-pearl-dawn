@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { searchCities } from "@/lib/server/weather";
 import { MOSCOW, useSettings } from "@/lib/stores/settings";
@@ -8,15 +8,22 @@ import { haptic } from "@/lib/haptic";
 import { APP_NAME } from "@/lib/brand";
 import { BrandMark } from "@/components/brand-mark";
 import type { City } from "@/lib/hub/types";
+import { telegramUserName } from "@/lib/telegram/webapp";
 
 export function Onboarding() {
   const completeOnboarding = useSettings((s) => s.completeOnboarding);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => telegramUserName());
   const [query, setQuery] = useState("Москва");
   const [city, setLocalCity] = useState<City>(MOSCOW);
   const search = useMutation({
     mutationFn: (q: string) => searchCities({ data: { q } }),
   });
+
+  useEffect(() => {
+    if (name) return;
+    const n = telegramUserName();
+    if (n) setName(n);
+  }, [name]);
 
   const finish = () => {
     const n = name.trim().slice(0, 40) || "Гость";

@@ -69,7 +69,9 @@
 |---|---|
 | `OPENCLAW_GATEWAY_URL` или `OPENCLAW_URL` | Шлюз, по умолчанию `http://127.0.0.1:18789` |
 | `OPENCLAW_GATEWAY_TOKEN` или `OPENCLAW_TOKEN` | Токен шлюза |
-| `OPENCLAW_MODEL` | Модель, по умолчанию `openclaw/default` |
+| `OPENCLAW_MODEL` | Модель общего пула и BYOK OpenClaw, по умолчанию `openclaw/default` |
+| `OPENAI_MODEL` | Модель своего ключа OpenAI, по умолчанию `gpt-4.1-mini` |
+| `ANTHROPIC_MODEL` | Модель своего ключа Anthropic, по умолчанию `claude-sonnet-4-5` |
 
 ### iCloud CalDAV (опционально, иначе пользователь вводит в Настройках)
 

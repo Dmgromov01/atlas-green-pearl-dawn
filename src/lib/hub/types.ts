@@ -26,18 +26,6 @@ export type HubModule = {
   order: number;
 };
 
-export type HubUser = {
-  displayName: string;
-  source: "local" | "telegram";
-  telegramId?: number;
-  role: "owner" | "admin" | "user";
-};
-
-export type AuthAdapter = {
-  kind: "none" | "telegram" | "session";
-  getUser: () => HubUser | null;
-};
-
 /** Plug-in slot: RSS today, Telegram/JSON later without UI rewrites. */
 export type DigestFetcher = {
   type: DigestSourceType;

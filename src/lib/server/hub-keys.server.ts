@@ -1,7 +1,7 @@
 import { getSql } from "@/lib/db";
 import { decryptSecret, encryptSecret, keyHint } from "@/lib/crypto/aes";
 import { assertPublicHttps } from "@/lib/sanitize";
-import { notifyTelegram } from "@/lib/telegram/init-data";
+import { notifyTelegram } from "@/lib/telegram/bot";
 import type { AiMode, ByokProvider } from "@/lib/hub/identity";
 import { audit, requireHubUser } from "./hub-auth.server";
 

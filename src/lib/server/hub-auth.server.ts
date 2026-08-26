@@ -1,6 +1,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { getSql } from "@/lib/db";
-import { botToken, notifyTelegram, verifyInitData } from "@/lib/telegram/init-data";
+import { botToken, verifyInitData } from "@/lib/telegram/init-data";
+import { notifyTelegram } from "@/lib/telegram/bot";
 import type { AiMode, AuthMethod, HubRole, HubUserPublic, KeySource } from "@/lib/hub/identity";
 import { SESSION_TTL_SEC } from "@/lib/hub/identity";
 
