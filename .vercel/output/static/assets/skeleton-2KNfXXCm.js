@@ -1,0 +1,1 @@
+import{O as e,r as t}from"./haptic-C6zcwpVG.js";var n=e();function r({className:e}){return(0,n.jsx)(`div`,{className:t(`animate-pulse rounded-xl bg-muted`,e)})}export{r as t};

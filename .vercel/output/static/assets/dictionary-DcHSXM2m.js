@@ -1,0 +1,1 @@
+import{c as e,g as t,h as n}from"./haptic-C6zcwpVG.js";var r=t()(n(t=>({entries:[],add:(n,r,i)=>{let a=n.trim();a&&t(t=>({entries:[{id:e(),src:a.slice(0,500),dst:r.trim().slice(0,500),pair:i,createdAt:Date.now()},...t.entries].slice(0,200)}))},remove:e=>t(t=>({entries:t.entries.filter(t=>t.id!==e)})),reset:()=>t({entries:[]})}),{name:`r2d2.dict.v1`}));export{r as t};
