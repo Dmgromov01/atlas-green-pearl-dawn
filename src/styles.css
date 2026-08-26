@@ -148,14 +148,12 @@
 
 .weather-card-wrap {
   overflow: hidden;
-  border-radius: var(--radius-2xl);
   isolation: isolate;
 }
 .weather-card {
   position: relative;
   overflow: hidden;
   height: 108px;
-  border-radius: var(--radius-2xl);
   color: #f4f6ff;
   isolation: isolate;
   background: #1b255c;

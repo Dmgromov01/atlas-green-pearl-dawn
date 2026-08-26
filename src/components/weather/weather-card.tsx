@@ -44,8 +44,8 @@ function Shell({
   label: string;
 }) {
   return (
-    <div className="weather-card-wrap mx-4 sm:mx-6">
-      <section className="weather-card" data-tone={tone} aria-label={label}>
+    <div className="weather-card-wrap mx-4 sm:mx-6 overflow-hidden rounded-2xl">
+      <section className="weather-card rounded-2xl" data-tone={tone} aria-label={label}>
         {children}
       </section>
     </div>

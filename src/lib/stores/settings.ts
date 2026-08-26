@@ -52,7 +52,7 @@ const initialReminders: ReminderPrefs = { morning: true, events: true, evening: 
 
 const initial = {
   displayName: "",
-  onboarded: true,
+  onboarded: false,
   theme: "system" as ThemePref,
   city: MOSCOW,
   enabledModules: "all" as const,
@@ -94,10 +94,11 @@ export const useSettings = create<SettingsState>()(
           Number.isFinite(Number(city.lat)) &&
           Number.isFinite(Number(city.lon)) &&
           typeof city.tz === "string";
+        const named = Boolean(String(p.displayName ?? "").trim());
         return {
           ...current,
           ...p,
-          onboarded: true,
+          onboarded: Boolean(p.onboarded) && named,
           city: cityOk ? city : current.city,
           reminders: { ...initialReminders, ...(p.reminders ?? current.reminders) },
           icsUrl: p.icsUrl ?? current.icsUrl ?? "",

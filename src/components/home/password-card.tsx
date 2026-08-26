@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy, KeyRound } from "lucide-react";
+import { Check, ChevronDown, Copy, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { generatePassword, passwordStrength } from "@/lib/password";
 import { Card } from "@/components/ui/card";
@@ -37,7 +37,15 @@ export function PasswordCard() {
         title="Пароли"
         status="Криптостойкий генератор"
         chevron={false}
-        trailing={<span className="text-sm text-muted-foreground">{open ? "▲" : "▼"}</span>}
+        expanded={open}
+        trailing={
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out",
+              open && "rotate-180",
+            )}
+          />
+        }
         onClick={() => {
           haptic();
           setOpen((v) => !v);
