@@ -43,6 +43,24 @@ export function formatDayLabel(date: Date, locale = "ru-RU") {
   return isToday ? `${label} · сегодня` : label;
 }
 
+export function formatDue(ts: number) {
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "";
+  const today = localDateKey(new Date());
+  const key = localDateKey(d);
+  const time = formatTime(d);
+  if (key === today) return `сегодня ${time}`;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (key === localDateKey(tomorrow)) return `завтра ${time}`;
+  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")} ${time}`;
+}
+
+export function isOverdue(ts?: number | null, done?: boolean) {
+  if (!ts || done) return false;
+  return ts < Date.now() - 60_000;
+}
+
 export function uid() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;

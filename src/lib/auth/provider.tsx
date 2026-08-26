@@ -14,7 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           offset="96px"
           toastOptions={{
             className:
-              "!bg-foreground !text-background !border-none !rounded-xl !text-sm !font-medium",
+              "!bg-foreground !text-background !border-none !rounded-2xl !text-sm !font-semibold",
           }}
         />
       </ThemeProvider>

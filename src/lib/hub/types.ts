@@ -9,7 +9,10 @@ export type HubModuleId =
   | "calendar"
   | "rates"
   | "passwords"
-  | "settings";
+  | "settings"
+  | "admin"
+  | "chat"
+  | "inbox";
 
 export type HubModule = {
   id: HubModuleId;
@@ -59,10 +62,31 @@ export type DigestSource = {
   enabled: boolean;
 };
 
+export type RepeatRule = "none" | "daily" | "weekdays" | "weekly";
+
 export type TaskItem = {
   id: string;
   text: string;
   done: boolean;
+  createdAt: number;
+  dueAt?: number | null;
+  repeat?: RepeatRule;
+  shared?: boolean;
+  ownerName?: string;
+};
+
+export type InboxNote = {
+  id: string;
+  text: string;
+  createdAt: number;
+  shared?: boolean;
+  ownerName?: string;
+};
+
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
   createdAt: number;
 };
 
@@ -80,8 +104,13 @@ export type CalEvent = {
   end?: string;
   summary: string;
   location?: string;
-  source: "local" | "holiday" | "google";
+  source: "local" | "holiday" | "google" | "ics" | "shared";
   allDay?: boolean;
+  shared?: boolean;
+  ownerName?: string;
+  googleEventId?: string;
+  googleCalId?: string;
+  icloudHref?: string;
 };
 
 export type CalendarProvider = {

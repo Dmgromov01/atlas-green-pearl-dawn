@@ -27,5 +27,5 @@ export const getRates = createServerFn({ method: "GET" }).handler(async (): Prom
       },
       ts: Date.now(),
     };
-  });
+  }, "rates");
 });

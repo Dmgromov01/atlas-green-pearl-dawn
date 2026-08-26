@@ -6,6 +6,7 @@ import { translateText } from "@/lib/server/translate";
 import { useDictionary } from "@/lib/stores/dictionary";
 import { AppShell } from "@/components/shell/app-shell";
 import { Header } from "@/components/shell/header";
+import { Page, SectionLabel } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -53,8 +54,9 @@ export function TranslateView() {
           </Button>
         }
       />
-      <div className="space-y-3 px-4">
-        <Card className="flex gap-1 p-1.5">
+      <Page>
+        <Card className="p-1.5">
+          <div className="seg !p-0 !bg-transparent">
           {PAIRS.map((p) => (
             <button
               key={p.id}
@@ -64,14 +66,12 @@ export function TranslateView() {
                 setPair(p.id);
                 setResult("");
               }}
-              className={cn(
-                "h-10 flex-1 rounded-xl text-xs font-bold transition-colors duration-150",
-                pair === p.id ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-              )}
+              className={cn("seg__btn", pair === p.id && "is-on")}
             >
               {p.label}
             </button>
           ))}
+          </div>
         </Card>
 
         <Card className="space-y-3 p-4">
@@ -137,9 +137,9 @@ export function TranslateView() {
 
         <Card className="space-y-3 p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <SectionLabel>
               Словарь ({entries.length})
-            </span>
+            </SectionLabel>
             <span className="text-xs text-muted-foreground">на этом устройстве</span>
           </div>
           <Input value={src} onChange={(e) => setSrc(e.target.value)} placeholder="Фраза…" />
@@ -158,13 +158,13 @@ export function TranslateView() {
             Добавить в словарь
           </Button>
           {entries.length === 0 ? (
-            <p className="rounded-xl bg-muted px-3 py-4 text-center text-xs text-muted-foreground">
+            <p className="rounded-2xl bg-muted px-3 py-4 text-center text-xs text-muted-foreground">
               Словарь пуст. Сохраните перевод или добавьте пару вручную.
             </p>
           ) : (
             <div className="max-h-72 space-y-2 overflow-y-auto">
               {entries.map((x) => (
-                <div key={x.id} className="rounded-xl border border-border bg-muted px-3 py-2.5">
+                <div key={x.id} className="rounded-2xl border border-border bg-muted px-3 py-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="text-sm font-bold break-words">{x.src}</div>
                     <button
@@ -185,7 +185,7 @@ export function TranslateView() {
             </div>
           )}
         </Card>
-      </div>
+      </Page>
     </AppShell>
   );
 }

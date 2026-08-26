@@ -33,13 +33,11 @@ export function PasswordCard() {
   return (
     <Card>
       <ServiceRow
-        icon={<KeyRound className="size-5" />}
+        icon={<KeyRound className="size-4" />}
         title="Пароли"
         status="Криптостойкий генератор"
         chevron={false}
-        trailing={
-          <span className="text-sm text-muted-foreground">{open ? "▲" : "▼"}</span>
-        }
+        trailing={<span className="text-sm text-muted-foreground">{open ? "▲" : "▼"}</span>}
         onClick={() => {
           haptic();
           setOpen((v) => !v);

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { persistOptions } from "./persist";
 import { uid } from "@/lib/utils";
 import type { DigestSource } from "@/lib/hub/types";
 
@@ -56,6 +57,6 @@ export const useSources = create<SourcesState>()(
         })),
       reset: () => set({ sources: DEFAULT_SOURCES }),
     }),
-    { name: "r2d2.sources.v1" },
+    { ...persistOptions("r2d2.sources.v1") },
   ),
 );

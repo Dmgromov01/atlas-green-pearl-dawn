@@ -31,7 +31,7 @@ function parseFeed(xml: string): DigestPost[] {
 
 async function loadRss(url: string): Promise<DigestPost[]> {
   const safe = assertPublicHttps(url);
-  const xml = await cached(`rss:${safe.href}`, 12 * 60_000, () => fetchText(safe.href, 9000, 600_000));
+  const xml = await cached(`rss:${safe.href}`, 12 * 60_000, () => fetchText(safe.href, 9000, 600_000), "digest");
   return parseFeed(xml);
 }
 

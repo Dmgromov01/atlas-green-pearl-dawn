@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useSources } from "@/lib/stores/sources";
 import { AppShell } from "@/components/shell/app-shell";
 import { Header } from "@/components/shell/header";
+import { Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +33,8 @@ export function SourcesView() {
 
   return (
     <AppShell>
-      <Header title="Источники" subtitle="Каналы и RSS для дайджеста" backTo="/digest" />
-      <div className="space-y-3 px-4">
+      <Header title="Настройки дайджеста" subtitle="Источники ленты" backTo="/settings" />
+      <Page>
         <Card>
           {sources.map((s, i) => (
             <div key={s.id} className={i > 0 ? "border-t border-border" : ""}>
@@ -63,7 +64,7 @@ export function SourcesView() {
         </Card>
 
         <Card className="space-y-3 p-4">
-          <div className="flex gap-1.5 rounded-xl bg-muted p-1.5">
+          <div className="seg">
             {(
               [
                 { id: "rss" as const, label: "RSS" },
@@ -74,10 +75,7 @@ export function SourcesView() {
                 key={t.id}
                 type="button"
                 onClick={() => setType(t.id)}
-                className={cn(
-                  "h-10 flex-1 rounded-lg text-xs font-bold",
-                  type === t.id ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-                )}
+                className={cn("seg__btn", type === t.id && "is-on")}
               >
                 {t.label}
               </button>
@@ -99,7 +97,7 @@ export function SourcesView() {
             </p>
           ) : null}
         </Card>
-      </div>
+      </Page>
     </AppShell>
   );
 }

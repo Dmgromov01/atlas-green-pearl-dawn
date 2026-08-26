@@ -13,7 +13,7 @@ export function IconWell({
   return (
     <div
       className={cn(
-        "flex size-10 shrink-0 items-center justify-center rounded-full border",
+        "flex size-8 shrink-0 items-center justify-center rounded-full border",
         accent
           ? "border-transparent bg-accent-soft text-accent"
           : "border-border bg-muted text-foreground",

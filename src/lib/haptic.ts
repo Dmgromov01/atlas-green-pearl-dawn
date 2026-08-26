@@ -24,6 +24,10 @@ export function haptic(kind: HapticKind = "light") {
   }
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
     const ms = kind === "heavy" ? 24 : kind === "medium" ? 16 : kind === "success" ? 12 : 8;
-    navigator.vibrate(ms);
+    try {
+      navigator.vibrate(ms);
+    } catch {
+      /* ignore */
+    }
   }
 }

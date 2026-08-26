@@ -12,15 +12,9 @@ export function AppShell({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "mx-auto min-h-dvh w-full max-w-lg bg-background",
-        withTabs && "pb-[calc(86px+env(safe-area-inset-bottom))]",
-        className,
-      )}
-    >
-      {children}
+    <div className={cn("hub-shell", withTabs && "hub-shell--tabs", className)}>
       {withTabs ? <TabBar /> : null}
+      <div className="hub-main">{children}</div>
     </div>
   );
 }

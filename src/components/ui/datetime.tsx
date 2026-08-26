@@ -1,7 +1,7 @@
 import { cn, formatDayLabel, localDateKey } from "@/lib/utils";
 
 const field =
-  "h-11 rounded-xl border border-border bg-muted px-2 text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "h-9 appearance-none rounded-full border border-border bg-muted px-3 text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 function slots() {
   const out: string[] = [];
@@ -60,18 +60,21 @@ export function TimeField({
 }) {
   const list = TIMES.includes(value) ? TIMES : [value, ...TIMES];
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn(field, "w-[5.75rem] shrink-0", className)}
-      aria-label="Время"
-    >
-      {list.map((t) => (
-        <option key={t} value={t}>
-          {t}
-        </option>
-      ))}
-    </select>
+    <div className={cn("time-oval", className)}>
+      <span className="time-oval__value">{value}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="time-oval__select"
+        aria-label="Время"
+      >
+        {list.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 

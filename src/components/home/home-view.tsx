@@ -7,9 +7,10 @@ import { Card } from "@/components/ui/card";
 import { ServiceRow } from "@/components/shell/service-row";
 import { WeatherCard } from "@/components/weather/weather-card";
 import { SummaryStrip } from "@/components/home/summary-strip";
-import { RatesCard } from "@/components/home/rates-card";
+import { TodayCard } from "@/components/home/today-card";
 import { TasksCard } from "@/components/home/tasks-card";
 import { CalendarCard } from "@/components/home/calendar-card";
+import { InboxCard } from "@/components/home/inbox-card";
 import { PasswordCard } from "@/components/home/password-card";
 import { useSettings } from "@/lib/stores/settings";
 import { haptic } from "@/lib/haptic";
@@ -18,14 +19,15 @@ export function HomeView() {
   const navigate = useNavigate();
   const name = useSettings((s) => s.displayName);
   const enabled = useSettings((s) => s.enabledModules);
-  const show = (id: "rates" | "tasks" | "calendar" | "passwords" | "fun" | "translate") =>
+  const show = (id: "tasks" | "calendar" | "passwords" | "fun" | "translate" | "inbox") =>
     enabled === "all" || enabled.includes(id);
 
   return (
     <AppShell>
       <Header
-        title="R2D2"
-        subtitle={name ? `Привет, ${name}` : "мини-приложение"}
+        title="Personal AI Hub"
+        subtitle={name ? `Привет, ${name}` : undefined}
+        brand
         right={
           <Button
             variant="secondary"
@@ -40,34 +42,19 @@ export function HomeView() {
           </Button>
         }
       />
-      <div className="space-y-3">
+      <div className="hub-home">
         <SummaryStrip />
         <WeatherCard />
-        {show("rates") ? (
-          <div className="px-4">
-            <RatesCard />
-          </div>
-        ) : null}
-        {show("tasks") ? (
-          <div className="px-4">
-            <TasksCard />
-          </div>
-        ) : null}
-        {show("calendar") ? (
-          <div className="px-4">
-            <CalendarCard />
-          </div>
-        ) : null}
-        {show("passwords") ? (
-          <div className="px-4">
-            <PasswordCard />
-          </div>
-        ) : null}
-        {show("fun") ? (
-          <div className="px-4">
+        <div className="hub-grid px-4 sm:px-6">
+          <TodayCard />
+          {show("inbox") ? <InboxCard /> : null}
+          {show("tasks") ? <TasksCard /> : null}
+          {show("calendar") ? <CalendarCard /> : null}
+          {show("passwords") ? <PasswordCard /> : null}
+          {show("fun") ? (
             <Card>
               <ServiceRow
-                icon={<Brain className="size-5" />}
+                icon={<Brain className="size-4" />}
                 title="Викторины и идеи"
                 status="Вопросы и чем заняться"
                 onClick={() => {
@@ -76,13 +63,11 @@ export function HomeView() {
                 }}
               />
             </Card>
-          </div>
-        ) : null}
-        {show("translate") ? (
-          <div className="px-4">
+          ) : null}
+          {show("translate") ? (
             <Card>
               <ServiceRow
-                icon={<Languages className="size-5" />}
+                icon={<Languages className="size-4" />}
                 title="Переводчик и словарь"
                 status="EN · ES · RU"
                 onClick={() => {
@@ -91,8 +76,8 @@ export function HomeView() {
                 }}
               />
             </Card>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </AppShell>
   );

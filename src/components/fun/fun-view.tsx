@@ -5,6 +5,7 @@ import { getQuiz } from "@/lib/server/quiz";
 import { getActivity } from "@/lib/server/activity";
 import { AppShell } from "@/components/shell/app-shell";
 import { Header } from "@/components/shell/header";
+import { Page } from "@/components/shell/page";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,7 @@ export function FunView() {
           </Button>
         }
       />
-      <div className="space-y-3 px-4">
+      <Page>
         <Card>
           <ServiceRow
             accent
@@ -87,7 +88,7 @@ export function FunView() {
                     Показать ответ
                   </Button>
                 ) : (
-                  <div className="rounded-xl border border-success/25 bg-success/10 p-3.5">
+                  <div className="rounded-2xl border border-success/25 bg-success/10 p-3.5">
                     <div className="text-xs font-bold uppercase tracking-wide text-success">Ответ</div>
                     <div className="text-sm font-semibold">{quiz.data.answer}</div>
                   </div>
@@ -142,7 +143,7 @@ export function FunView() {
             )}
           </div>
         </Card>
-      </div>
+      </Page>
     </AppShell>
   );
 }

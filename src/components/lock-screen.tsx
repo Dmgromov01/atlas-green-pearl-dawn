@@ -4,6 +4,8 @@ import { unlockSession } from "@/lib/pin-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { haptic } from "@/lib/haptic";
+import { APP_NAME } from "@/lib/brand";
+import { BrandMark } from "@/components/brand-mark";
 
 export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
   const pinSalt = useSettings((s) => s.pinSalt);
@@ -35,30 +37,27 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">R2D2</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Здравствуйте{name ? `, ${name}` : ""}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Введите код доступа к хабу.</p>
-      <form
-        className="mt-8 space-y-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void submit();
+      <BrandMark size={56} className="mx-auto" />
+      <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{APP_NAME}</p>
+      <h1 className="mt-2 text-center text-3xl font-semibold tracking-tight">Здравствуйте{name ? `, ${name}` : ""}</h1>
+      <p className="mt-2 text-center text-sm text-muted-foreground">Введите код доступа к хабу.</p>
+      <Input
+        className="mt-6"
+        type="password"
+        inputMode="numeric"
+        autoComplete="off"
+        value={pin}
+        onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") void submit();
         }}
-      >
-        <Input
-          type="password"
-          inputMode="numeric"
-          autoComplete="off"
-          value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-          placeholder="Код"
-          autoFocus
-        />
-        {err ? <p className="text-sm font-medium text-destructive">{err}</p> : null}
-        <Button className="h-12 w-full" disabled={busy || pin.length < 4}>
-          Открыть
-        </Button>
-      </form>
+        placeholder="Код"
+        autoFocus
+      />
+      {err ? <p className="mt-2 text-sm text-destructive">{err}</p> : null}
+      <Button className="mt-4 h-12 w-full" disabled={busy || pin.length < 4} onClick={() => void submit()}>
+        Открыть
+      </Button>
     </div>
   );
 }

@@ -1,69 +1,117 @@
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getWeather, type WeatherNow } from "@/lib/server/weather";
-import { useSettings } from "@/lib/stores/settings";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatTime } from "@/lib/utils";
+import { MOSCOW, useSettings } from "@/lib/stores/settings";
+import { hourInTz } from "@/lib/weather/codes";
+import type { City } from "@/lib/hub/types";
 
-function Hourly({ data }: { data: WeatherNow }) {
+function hourLabel(iso: string, tz: string) {
+  return String(hourInTz(iso, tz)).padStart(2, "0");
+}
+
+function safeCity(city: City | undefined): City {
+  const lat = Number(city?.lat);
+  const lon = Number(city?.lon);
+  if (city && Number.isFinite(lat) && Number.isFinite(lon) && city.tz) return city;
+  return MOSCOW;
+}
+
+function Hourly({ data, tz }: { data: WeatherNow; tz: string }) {
   return (
-    <div className="no-scrollbar relative z-10 flex gap-2 overflow-x-auto px-4 pb-3 pt-1">
-      {data.hourly.map((h) => (
-        <div key={h.time} className="flex w-11 shrink-0 flex-col items-center text-center">
-          <div className="text-xs font-bold tabular-nums">{formatTime(new Date(h.time))}</div>
+    <div className="weather-card__hourly">
+      {data.hourly.slice(0, 12).map((h) => (
+        <div key={h.time} className="weather-card__hour">
+          <span className="weather-card__hour-time">{hourLabel(h.time, tz)}</span>
           <img
             src={`/weather-icons/meteocons/${h.icon}.svg`}
             alt=""
-            className="my-0.5 size-7 drop-shadow"
+            className="weather-card__hour-ic"
           />
-          <div className="text-sm font-extrabold tabular-nums">{Math.round(h.temp)}°</div>
+          <span className="weather-card__hour-temp">{Math.round(h.temp)}°</span>
         </div>
       ))}
     </div>
   );
 }
 
+function Shell({
+  children,
+  tone = "cloud",
+  label,
+}: {
+  children: ReactNode;
+  tone?: string;
+  label: string;
+}) {
+  return (
+    <div className="weather-card-wrap mx-4 sm:mx-6">
+      <section className="weather-card" data-tone={tone} aria-label={label}>
+        {children}
+      </section>
+    </div>
+  );
+}
+
 export function WeatherCard() {
-  const city = useSettings((s) => s.city);
+  const rawCity = useSettings((s) => s.city);
+  const city = safeCity(rawCity);
   const q = useQuery({
-    queryKey: ["weather", city.lat, city.lon, city.tz],
+    queryKey: ["weather", "v3", city.lat, city.lon, city.tz],
     queryFn: () =>
       getWeather({ data: { lat: city.lat, lon: city.lon, tz: city.tz, city: city.name } }),
+    staleTime: 20 * 60_000,
+    retry: 2,
+    placeholderData: (prev) => prev,
   });
 
-  if (q.isLoading) {
-    return <Skeleton className="mx-4 h-40 rounded-2xl" />;
-  }
-  if (q.isError || !q.data) {
+  if (q.isLoading && !q.data) {
     return (
-      <div className="mx-4 rounded-2xl border border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
-        Погода недоступна. Проверьте сеть и город в настройках.
-      </div>
+      <Shell label="Загрузка погоды">
+        <div className="weather-card__now">
+          <div className="weather-card__city">{city.name}</div>
+          <div className="weather-card__temp">··</div>
+          <div className="weather-card__meta">обновляю погоду</div>
+        </div>
+      </Shell>
     );
   }
 
-  const w = q.data;
-  return (
-    <section
-      className="weather-card mx-4"
-      data-tone={w.tone}
-      style={{
-        backgroundImage: `url(/weather-icons/hero/${w.hero})`,
-      }}
-      aria-label={`Погода в ${w.city}`}
-    >
-      <div className="relative z-10 flex items-start justify-between px-4 pt-3">
-        <div>
-          <div className="text-sm font-extrabold drop-shadow">{w.city}</div>
-          <div className="text-5xl font-extrabold leading-none tracking-tight drop-shadow">
-            {w.temp}
-            <sup className="text-xl font-semibold">°C</sup>
-          </div>
-          <div className="mt-0.5 text-sm font-extrabold drop-shadow">{w.condition}</div>
-          <div className="text-xs font-bold opacity-85 drop-shadow">Ветер {w.wind} м/с</div>
+  if (q.isError && !q.data) {
+    return (
+      <Shell label="Погода недоступна">
+        <div className="weather-card__now">
+          <div className="weather-card__city">{city.name}</div>
+          <div className="weather-card__temp">—</div>
+          <div className="weather-card__meta">нет сети</div>
         </div>
+        <button
+          type="button"
+          className="weather-card__retry"
+          onClick={() => void q.refetch()}
+        >
+          Обновить
+        </button>
+      </Shell>
+    );
+  }
+
+  const w = q.data!;
+  return (
+    <Shell tone={w.tone} label={`Погода в ${w.city}`}>
+      <img className="weather-card__art" src={`/weather-icons/hero/${w.hero}?v=3`} alt="" />
+      <div className="weather-card__body">
+        <div className="weather-card__now">
+          <div className="weather-card__city">{w.city}</div>
+          <div className="weather-card__temp">
+            {w.temp}
+            <sup>°</sup>
+          </div>
+          <div className="weather-card__meta">
+            {w.condition} · {w.wind} м/с
+          </div>
+        </div>
+        <Hourly data={w} tz={city.tz} />
       </div>
-      <div className="weather-card__rule relative z-10 mx-4 mt-2" />
-      <Hourly data={w} />
-    </section>
+    </Shell>
   );
 }

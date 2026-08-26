@@ -8,38 +8,33 @@ export function TabBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const enabled = useSettings((s) => s.enabledModules);
   const tabs = tabModules(enabled);
+  const home = tabs.find((t) => t.id === "home");
+  const chat = tabs.find((t) => t.id === "chat");
+  const more = tabs.find((t) => t.id === "settings");
+
+  const item = (tab: (typeof tabs)[number], fab = false) => {
+    const active = tab.path === "/" ? pathname === "/" : pathname.startsWith(tab.path);
+    const Icon = tab.icon;
+    return (
+      <Link
+        key={tab.id}
+        to={tab.path}
+        onClick={() => haptic()}
+        className={cn(fab ? "tabbar__fab" : "tabbar__item", active && "is-active")}
+        aria-current={active ? "page" : undefined}
+        aria-label={tab.title}
+      >
+        <Icon className={fab ? "size-5" : "tabbar__icon"} strokeWidth={active || fab ? 2.2 : 1.8} />
+        {fab ? null : <span className="tabbar__label">{tab.shortTitle}</span>}
+      </Link>
+    );
+  };
 
   return (
-    <nav
-      className="tabbar fixed inset-x-0 bottom-0 z-30 mx-auto flex h-[74px] max-w-lg items-center justify-around border-t border-border bg-card"
-      aria-label="Основная навигация"
-    >
-      {tabs.map((tab) => {
-        const active = tab.path === "/" ? pathname === "/" : pathname.startsWith(tab.path);
-        const Icon = tab.icon;
-        return (
-          <Link
-            key={tab.id}
-            to={tab.path}
-            onClick={() => haptic()}
-            className="flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1"
-            aria-current={active ? "page" : undefined}
-          >
-            <Icon
-              className={cn("size-5", active ? "text-accent" : "text-muted-foreground")}
-              strokeWidth={active ? 2.2 : 1.8}
-            />
-            <span
-              className={cn(
-                "max-w-full truncate text-xs font-medium",
-                active ? "text-accent" : "text-muted-foreground",
-              )}
-            >
-              {tab.shortTitle}
-            </span>
-          </Link>
-        );
-      })}
+    <nav className="tabbar" aria-label="Основная навигация">
+      {home ? item(home) : null}
+      <div className="tabbar__slot">{chat ? item(chat, true) : null}</div>
+      {more ? item(more) : null}
     </nav>
   );
 }

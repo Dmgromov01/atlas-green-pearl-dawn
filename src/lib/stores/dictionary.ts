@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { persistOptions } from "./persist";
 import { uid } from "@/lib/utils";
 import type { DictEntry } from "@/lib/hub/types";
 
@@ -27,6 +28,6 @@ export const useDictionary = create<DictState>()(
       remove: (id) => set((st) => ({ entries: st.entries.filter((e) => e.id !== id) })),
       reset: () => set({ entries: [] }),
     }),
-    { name: "r2d2.dict.v1" },
+    { ...persistOptions("r2d2.dict.v1") },
   ),
 );

@@ -11,6 +11,7 @@ export function ServiceRow({
   trailing,
   accent,
   chevron = true,
+  expanded,
 }: {
   icon: ReactNode;
   title: string;
@@ -19,22 +20,24 @@ export function ServiceRow({
   trailing?: ReactNode;
   accent?: boolean;
   chevron?: boolean;
+  expanded?: boolean;
 }) {
   const Comp = onClick ? "button" : "div";
   return (
     <Comp
       type={onClick ? "button" : undefined}
       onClick={onClick}
+      aria-expanded={expanded}
       className={cn(
-        "relative flex min-h-16 w-full items-center gap-3 px-3.5 py-2 text-left",
+        "relative flex min-h-12 w-full items-center gap-2.5 px-3 py-1.5 text-left",
         onClick && "transition-colors duration-150 hover:bg-muted/60",
       )}
     >
       <IconWell accent={accent}>{icon}</IconWell>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-base font-semibold leading-snug text-foreground">{title}</div>
+        <div className="truncate text-sm font-semibold leading-snug text-foreground">{title}</div>
         {status ? (
-          <div className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{status}</div>
+          <div className="truncate text-[11px] font-medium leading-tight text-muted-foreground">{status}</div>
         ) : null}
       </div>
       {trailing}

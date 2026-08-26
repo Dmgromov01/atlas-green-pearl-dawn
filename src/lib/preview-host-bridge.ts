@@ -75,7 +75,26 @@ export function installPreviewHostBridge(
     ancestorOrigin,
     window.location.hostname,
   );
-  if (parentOrigin === null) return () => {};
+  if (parentOrigin === null) {
+    if (window.parent !== window) {
+      try {
+        window.parent.postMessage(
+          {
+            channel: PREVIEW_BRIDGE_CHANNEL,
+            version: PREVIEW_BRIDGE_VERSION,
+            type: "ready",
+            path: window.location.pathname || "/",
+            search: window.location.search,
+            hash: window.location.hash,
+          },
+          "*",
+        );
+      } catch {
+        /* host may still time out; do not throw */
+      }
+    }
+    return () => {};
+  }
 
   const ROOT_STATE_KEY = "__grokPreviewBridgeRoot";
   const originalPushState = window.history.pushState.bind(window.history);

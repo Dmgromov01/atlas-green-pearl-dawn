@@ -4,11 +4,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold transition-[transform,background-color,opacity,box-shadow] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-40 enabled:active:scale-[0.96] [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold transition-[transform,background-color,opacity,box-shadow] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-40 enabled:active:scale-[0.96] [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-accent text-accent-foreground shadow-sm hover:opacity-90",
+        default: "btn-grad shadow-sm hover:opacity-90",
         solid: "bg-foreground text-background hover:opacity-90",
         secondary: "bg-muted text-foreground hover:bg-border",
         outline: "border border-border bg-card text-foreground hover:bg-muted",
@@ -16,11 +16,11 @@ const buttonVariants = cva(
         destructive: "bg-destructive text-accent-foreground hover:opacity-90",
       },
       size: {
-        default: "h-11 px-4",
-        sm: "h-9 rounded-lg px-3 text-xs",
-        lg: "h-12 px-5",
-        icon: "size-11",
-        "icon-sm": "size-9 rounded-xl",
+        default: "h-9 px-4",
+        sm: "h-8 rounded-full px-3 text-xs",
+        lg: "h-10 px-5",
+        icon: "size-9",
+        "icon-sm": "size-8",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

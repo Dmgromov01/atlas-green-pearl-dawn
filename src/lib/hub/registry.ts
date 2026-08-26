@@ -3,11 +3,14 @@ import {
   CalendarDays,
   Coins,
   House,
+  Inbox,
   KeyRound,
+  Languages,
+  MessageCircle,
   Newspaper,
   Settings,
+  Shield,
   SquareCheckBig,
-  Languages,
 } from "lucide-react";
 import type { HubModule, HubModuleId } from "./types";
 
@@ -24,15 +27,37 @@ export const HUB_MODULES: HubModule[] = [
     order: 0,
   },
   {
+    id: "chat",
+    title: "Агент",
+    shortTitle: "Агент",
+    description: "Чат с OpenClaw",
+    icon: MessageCircle,
+    path: "/chat",
+    showInTabBar: true,
+    showOnHome: false,
+    order: 1,
+  },
+  {
     id: "digest",
     title: "Дайджест",
     shortTitle: "Дайджест",
     description: "Новости из ваших источников",
     icon: Newspaper,
     path: "/digest",
-    showInTabBar: true,
+    showInTabBar: false,
     showOnHome: true,
-    order: 1,
+    order: 2,
+  },
+  {
+    id: "inbox",
+    title: "Inbox",
+    shortTitle: "Inbox",
+    description: "Заметки и мысли",
+    icon: Inbox,
+    path: "/",
+    showInTabBar: false,
+    showOnHome: true,
+    order: 3,
   },
   {
     id: "fun",
@@ -41,9 +66,9 @@ export const HUB_MODULES: HubModule[] = [
     description: "Вопросы и занятия",
     icon: Brain,
     path: "/fun",
-    showInTabBar: true,
+    showInTabBar: false,
     showOnHome: true,
-    order: 2,
+    order: 4,
   },
   {
     id: "translate",
@@ -52,9 +77,9 @@ export const HUB_MODULES: HubModule[] = [
     description: "Перевод и личный словарь",
     icon: Languages,
     path: "/translate",
-    showInTabBar: true,
+    showInTabBar: false,
     showOnHome: true,
-    order: 3,
+    order: 5,
   },
   {
     id: "settings",
@@ -63,9 +88,9 @@ export const HUB_MODULES: HubModule[] = [
     description: "Профиль, город, модули",
     icon: Settings,
     path: "/settings",
-    showInTabBar: true,
+    showInTabBar: false,
     showOnHome: false,
-    order: 4,
+    order: 6,
   },
   {
     id: "tasks",
@@ -76,7 +101,7 @@ export const HUB_MODULES: HubModule[] = [
     path: "/archive",
     showInTabBar: false,
     showOnHome: true,
-    order: 5,
+    order: 7,
   },
   {
     id: "calendar",
@@ -87,7 +112,7 @@ export const HUB_MODULES: HubModule[] = [
     path: "/calendar",
     showInTabBar: false,
     showOnHome: true,
-    order: 6,
+    order: 8,
   },
   {
     id: "rates",
@@ -95,10 +120,10 @@ export const HUB_MODULES: HubModule[] = [
     shortTitle: "Курсы",
     description: "Курсы ЦБ и конвертер",
     icon: Coins,
-    path: "/",
+    path: "/rates",
     showInTabBar: false,
-    showOnHome: true,
-    order: 7,
+    showOnHome: false,
+    order: 9,
   },
   {
     id: "passwords",
@@ -109,7 +134,18 @@ export const HUB_MODULES: HubModule[] = [
     path: "/",
     showInTabBar: false,
     showOnHome: true,
-    order: 8,
+    order: 10,
+  },
+  {
+    id: "admin",
+    title: "Админка",
+    shortTitle: "Админ",
+    description: "Пользователи, квоты, аудит",
+    icon: Shield,
+    path: "/admin",
+    showInTabBar: false,
+    showOnHome: false,
+    order: 11,
   },
 ];
 
@@ -120,7 +156,7 @@ export function getModule(id: HubModuleId) {
 export function tabModules(enabled: HubModuleId[] | "all" = "all") {
   return HUB_MODULES.filter((m) => {
     if (!m.showInTabBar) return false;
-    if (m.id === "home" || m.id === "settings") return true;
+    if (m.id === "home" || m.id === "chat") return true;
     return enabled === "all" || enabled.includes(m.id);
   }).sort((a, b) => a.order - b.order);
 }
