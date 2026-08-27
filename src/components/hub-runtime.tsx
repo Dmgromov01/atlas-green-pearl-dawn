@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchIcsFeed } from "@/lib/server/ics";
 import { hubShareList } from "@/lib/server/hub-share";
@@ -23,12 +23,18 @@ export function HubRuntime() {
   const mergeCal = useCalendar((s) => s.mergeShared);
   const mergeTasks = useTasks((s) => s.mergeShared);
   const mergeNotes = useInbox((s) => s.mergeShared);
+  const [warm, setWarm] = useState(false);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setWarm(true), 1200);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const ics = useQuery({
     queryKey: ["ics", icsUrl],
     queryFn: () => fetchIcsFeed({ data: { url: icsUrl } }),
-    enabled: Boolean(icsUrl?.trim()),
-    staleTime: 10 * 60_000,
+    enabled: warm && Boolean(icsUrl?.trim()),
+    staleTime: 20 * 60_000,
   });
 
   useEffect(() => {
@@ -53,6 +59,7 @@ export function HubRuntime() {
   }, [token, family]);
 
   useEffect(() => {
+    if (!warm) return;
     let stop: (() => void) | undefined;
     let cancelled = false;
     void import("@/lib/live/client")
@@ -80,7 +87,7 @@ export function HubRuntime() {
       cancelled = true;
       stop?.();
     };
-  }, []);
+  }, [warm]);
 
   useEffect(() => {
     if (!token) return;

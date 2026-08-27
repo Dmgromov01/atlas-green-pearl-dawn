@@ -116,10 +116,10 @@ export async function patchUserAdmin(data: {
   });
   const tid = target.telegram_id;
   if (tid && !tid.startsWith("dev:") && data.allowGlobalAi === true) {
-    void notifyTelegram(tid, "Администратор открыл вам общий AI-пул R2D2.");
+    void notifyTelegram(tid, "Администратор открыл вам общий AI-пул.");
   }
   if (tid && !tid.startsWith("dev:") && data.allowed === true) {
-    void notifyTelegram(tid, "Доступ к R2D2 разрешён.");
+    void notifyTelegram(tid, "Доступ к AI Personal Hub разрешён.");
   }
   return { ok: true };
 }

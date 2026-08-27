@@ -139,7 +139,7 @@ async function upsertTelegramUser(tg: {
   const id = uid();
   const name = (tg.first_name || tg.username || "Гость").slice(0, 40);
   await sql`
-    insert into hub_users (id, telegram_id, username, display_name, role, allowed, allow_global_ai)
+    insert into hub_users (id, telegram_id, username, display_name, role, allowed, allow_global_ai, ai_mode)
     values (
       ${id},
       ${tid},
@@ -147,7 +147,8 @@ async function upsertTelegramUser(tg: {
       ${name},
       ${isOwner ? "admin" : "user"},
       ${isOwner},
-      ${isOwner}
+      ${isOwner},
+      ${isOwner ? "shared" : "off"}
     )
   `;
   const rows = await sql<UserRow>`select * from hub_users where id = ${id} limit 1`;
@@ -162,7 +163,6 @@ export async function loginHub(data: {
   biometric?: boolean;
 }): Promise<{ token: string; expiresAt: string; user: HubUserPublic } | { error: string }> {
     const tokenEnv = botToken();
-    const preview = !tokenEnv;
     let method: AuthMethod = "preview";
     let row: UserRow | null = null;
 
@@ -197,22 +197,22 @@ export async function loginHub(data: {
           return { error: "Неверный PIN" };
         }
         method = data.pin ? "pin" : "preview";
-        if (preview && (!row.allowed || row.role !== "admin")) {
-          await sql`
-            update hub_users
-            set allowed = true, role = 'admin', allow_global_ai = true
-            where id = ${row.id}
-          `;
-          row = { ...row, allowed: true, role: "admin", allow_global_ai: true };
-        }
       } else {
         const first = (await countUsers()) === 0;
         const id = uid();
         const name = (data.displayName || "Гость").trim().slice(0, 40) || "Гость";
-        const asAdmin = first || preview;
+        const asAdmin = first;
         await sql`
-          insert into hub_users (id, telegram_id, display_name, role, allowed, allow_global_ai)
-          values (${id}, ${did}, ${name}, ${asAdmin ? "admin" : "user"}, ${asAdmin}, ${asAdmin})
+          insert into hub_users (id, telegram_id, display_name, role, allowed, allow_global_ai, ai_mode)
+          values (
+            ${id},
+            ${did},
+            ${name},
+            ${asAdmin ? "admin" : "user"},
+            ${asAdmin},
+            ${asAdmin},
+            ${asAdmin ? "shared" : "off"}
+          )
         `;
         row = (await sql<UserRow>`select * from hub_users where id = ${id} limit 1`)[0]!;
         method = "preview";
@@ -242,8 +242,8 @@ export async function loginHub(data: {
       void notifyTelegram(
         row.telegram_id,
         method === "initData" || method === "biometric"
-          ? `Вход в R2D2 (${method === "biometric" ? "биометрия" : "Telegram"}).`
-          : `Вход в R2D2 по PIN.`,
+          ? `Вход в AI Personal Hub (${method === "biometric" ? "биометрия" : "Telegram"}).`
+          : `Вход в AI Personal Hub по PIN.`,
       );
     }
     return { token: ses.token, expiresAt: ses.expiresAt, user: publicUser(row) };
@@ -274,7 +274,7 @@ export async function setPinHub(token: string, pin: string) {
     authMethod: "pin",
   });
   if (user.telegram_id && !user.telegram_id.startsWith("dev:")) {
-    void notifyTelegram(user.telegram_id, "На аккаунте R2D2 установлен PIN.");
+    void notifyTelegram(user.telegram_id, "На аккаунте AI Personal Hub установлен PIN.");
   }
   return { ok: true };
 }

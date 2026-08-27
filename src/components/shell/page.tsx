@@ -7,7 +7,7 @@ export function Page({ children, className }: { children: ReactNode; className?:
 
 export function SectionLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("text-xs font-bold uppercase tracking-wide text-muted-foreground", className)}>
+    <div className={cn("text-sm font-semibold text-muted-foreground", className)}>
       {children}
     </div>
   );

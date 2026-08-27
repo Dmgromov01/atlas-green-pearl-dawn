@@ -7,6 +7,7 @@ import type { ChatMessage } from "@/lib/hub/types";
 type ChatState = {
   messages: ChatMessage[];
   push: (role: ChatMessage["role"], text: string) => ChatMessage;
+  popLastUser: () => void;
   reset: () => void;
 };
 
@@ -24,6 +25,12 @@ export const useChat = create<ChatState>()(
         set((s) => ({ messages: [...s.messages, msg].slice(-40) }));
         return msg;
       },
+      popLastUser: () =>
+        set((s) => {
+          const last = s.messages[s.messages.length - 1];
+          if (!last || last.role !== "user") return s;
+          return { messages: s.messages.slice(0, -1) };
+        }),
       reset: () => set({ messages: [] }),
     }),
     { ...persistOptions("r2d2.chat.v1") },

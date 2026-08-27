@@ -42,7 +42,7 @@ export function CalendarView() {
   const token = useHub((s) => s.token);
   const name = useHub((s) => s.user?.displayName);
   const family = useSettings((s) => s.familyShare);
-  const tz = useSettings((s) => s.city.tz);
+  const tz = useSettings((s) => s.city?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   const days = useMemo(() => {
     const start = new Date();

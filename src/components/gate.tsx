@@ -11,22 +11,40 @@ export function Gate({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let done = false;
     const finish = () => {
+      if (done) return;
+      done = true;
       const hash = useSettings.getState().pinHash;
       setUnlocked(!hash || isSessionUnlocked());
       setReady(true);
     };
-    if (useSettings.persist.hasHydrated()) finish();
-    const unsub = useSettings.persist.onFinishHydration(finish);
-    return unsub;
+    try {
+      if (useSettings.persist.hasHydrated()) {
+        finish();
+        return () => {
+          done = true;
+        };
+      }
+    } catch {
+      /* ignore */
+    }
+    let unsub = () => {};
+    try {
+      unsub = useSettings.persist.onFinishHydration(finish);
+    } catch {
+      finish();
+    }
+    const t = window.setTimeout(finish, 50);
+    return () => {
+      done = true;
+      unsub();
+      window.clearTimeout(t);
+    };
   }, [pinHash]);
 
   if (!ready) {
-    return (
-      <div className="grid min-h-dvh place-items-center bg-background">
-        <p className="text-sm font-semibold tracking-[0.22em] text-muted-foreground">R2D2</p>
-      </div>
-    );
+    return <div className="min-h-dvh bg-background" />;
   }
   if (!onboarded) return <Onboarding />;
   if (pinHash && !unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;

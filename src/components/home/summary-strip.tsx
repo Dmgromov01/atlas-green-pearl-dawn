@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Coins, Newspaper, SquareCheckBig } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getRates } from "@/lib/server/rates";
+import { readCache, writeCache } from "@/lib/local-cache";
 import { useTasks } from "@/lib/stores/tasks";
 import { useSettings } from "@/lib/stores/settings";
 import { haptic } from "@/lib/haptic";
@@ -13,10 +14,19 @@ export function SummaryStrip() {
   const enabled = useSettings((s) => s.enabledModules);
   const on = (id: "tasks" | "digest" | "rates") => enabled === "all" || enabled.includes(id);
   const active = useTasks((s) => s.tasks.filter((t) => !t.done).length);
+  const cachedRates = readCache<Awaited<ReturnType<typeof getRates>>>("rates", 12 * 60 * 60_000);
   const rates = useQuery({
     queryKey: ["rates"],
-    queryFn: () => getRates(),
+    queryFn: async () => {
+      const data = await getRates();
+      writeCache("rates", data);
+      return data;
+    },
     enabled: on("rates"),
+    staleTime: 30 * 60_000,
+    gcTime: 12 * 60 * 60_000,
+    retry: 1,
+    placeholderData: cachedRates,
   });
   const usd = rates.data?.rates.USD;
 

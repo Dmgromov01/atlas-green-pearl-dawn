@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Shield, Newspaper, RefreshCw } from "lucide-react";
 import { searchCities } from "@/lib/server/weather";
 import { fetchIcsFeed } from "@/lib/server/ics";
-import { hashPin, MOSCOW, useSettings } from "@/lib/stores/settings";
+import { hashPin, useSettings } from "@/lib/stores/settings";
 import { useTasks } from "@/lib/stores/tasks";
 import { useCalendar } from "@/lib/stores/calendar";
 import { useDictionary } from "@/lib/stores/dictionary";
@@ -35,6 +35,7 @@ import { refreshHubData } from "@/lib/server/live";
 import { useLive } from "@/lib/live/status";
 import { queryClient } from "@/lib/query-client";
 import { cn } from "@/lib/utils";
+import { locateCity } from "@/lib/geo";
 
 export function SettingsView() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ export function SettingsView() {
   const hub = useHub();
   const live = useLive();
   const [name, setName] = useState(s.displayName);
-  const [q, setQ] = useState(s.city.name);
+  const [q, setQ] = useState(s.city?.name ?? "");
   const [pin, setPin] = useState("");
   const search = useMutation({
     mutationFn: (query: string) => searchCities({ data: { q } }),
@@ -125,8 +126,6 @@ export function SettingsView() {
           </Button>
         </Card>
 
-        <HomeScreenCard />
-
         <AiAccessCard />
 
         <IcloudCard />
@@ -172,9 +171,9 @@ export function SettingsView() {
         </Card>
 
         <Card className="space-y-3 p-4">
-          <SectionLabel>Напоминания в Telegram</SectionLabel>
+          <SectionLabel>Напоминания</SectionLabel>
           <p className="text-sm text-muted-foreground">
-            Бот пишет, когда хаб открыт: утром, за 15 минут до события и вечером. Нужен вход через Telegram.
+            Утром, за 15 минут до события и вечером — пока хаб открыт.
           </p>
           {(
             [
@@ -212,28 +211,35 @@ export function SettingsView() {
 
         <Card className="space-y-3 p-4">
           <SectionLabel>Город</SectionLabel>
+          <p className="text-sm text-muted-foreground">
+            {s.city ? `Сейчас: ${s.city.name}` : "Определяется по геолокации"}
+          </p>
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={() => {
+              void locateCity()
+                .then((city) => {
+                  s.setCity(city);
+                  setQ(city.name);
+                  toast("Место обновлено");
+                })
+                .catch(() => toast.error("Геолокация недоступна"));
+            }}
+          >
+            Моё место
+          </Button>
           <div className="flex gap-2">
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Найти город" />
             <Button variant="secondary" onClick={() => search.mutate(q)}>
               Найти
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground">Сейчас: {s.city.name}</p>
-          <button
-            type="button"
-            className="w-full rounded-full bg-muted px-3 py-2 text-left text-sm"
-            onClick={() => {
-              s.setCity(MOSCOW);
-              setQ(MOSCOW.name);
-            }}
-          >
-            Москва
-          </button>
           {(search.data ?? []).map((c) => (
             <button
               key={`${c.lat}-${c.lon}`}
               type="button"
-              className="w-full rounded-full bg-muted px-3 py-2 text-left text-sm"
+              className="min-h-11 w-full rounded-full bg-muted px-3 py-2 text-left text-base"
               onClick={() => {
                 s.setCity({ name: c.name, lat: c.lat, lon: c.lon, tz: c.tz, country: c.country });
                 setQ(c.name);
@@ -249,7 +255,7 @@ export function SettingsView() {
         <Card className="space-y-3 p-4">
           <SectionLabel>PIN</SectionLabel>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            4–8 цифр. Запасной вход, если в Telegram WebView нет биометрии. Хеш на устройстве и на сервере.
+            4–8 цифр. Запасной вход на этом устройстве.
           </p>
           <Input
             type="password"
@@ -376,6 +382,7 @@ export function SettingsView() {
             Сбросить локальные данные
           </Button>
         </Card>
+        <HomeScreenCard />
       </Page>
     </AppShell>
   );

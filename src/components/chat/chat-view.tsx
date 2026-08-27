@@ -34,15 +34,15 @@ function dayContext() {
     .getState()
     .events.filter((e) => localDateKey(e.start) === today)
     .slice(0, 6)
-    .map((e) => `${e.summary} ${e.start.slice(11, 16)}`);
+    .map((e) => `${e.summary} ${formatTime(new Date(e.start))}`);
   const notes = useInbox
     .getState()
     .notes.slice(0, 5)
     .map((n) => n.text);
   return [
-    `Сейчас: ${today} ${formatTime(now)} (${city.tz})`,
+    `Сейчас: ${today} ${formatTime(now)}${city ? ` (${city.tz})` : ""}`,
     name ? `Пользователь: ${name}` : "",
-    `Город: ${city.name}`,
+    city ? `Город: ${city.name}` : "",
     tasks.length ? `Задачи: ${tasks.join("; ")}` : "Открытых задач нет",
     events.length ? `События сегодня: ${events.join("; ")}` : "Событий сегодня нет",
     notes.length ? `Inbox: ${notes.join("; ")}` : "",
@@ -59,6 +59,7 @@ export function ChatView() {
   const family = useSettings((s) => s.familyShare);
   const messages = useChat((s) => s.messages);
   const push = useChat((s) => s.push);
+  const popLastUser = useChat((s) => s.popLastUser);
   const reset = useChat((s) => s.reset);
   const [text, setText] = useState("");
   const [voiceError, setVoiceError] = useState("");
@@ -72,6 +73,7 @@ export function ChatView() {
   const send = useMutation({
     mutationFn: async (payload: string) => {
       if (!token) throw new Error("Нет сессии. Откройте хаб заново.");
+      if (user?.aiMode === "off") throw new Error("Агент выключен. Включите AI в Настройках.");
       push("user", payload);
       const history = [...useChat.getState().messages].map((m) => ({
         role: m.role,
@@ -80,22 +82,28 @@ export function ChatView() {
       return hubAiChat({ data: { token, messages: history, context: dayContext() } });
     },
     onSuccess: (res) => {
-      const { text: reply, actions } = splitHubReply(res.text || "");
+      const { text: reply, actions, fenced } = splitHubReply(res.text || "");
       const labels = applyHubActions(actions, {
         token,
         name: user?.displayName,
         family,
       });
+      if (fenced && !actions.length) {
+        toast.error("Не смог разобрать действие агента");
+      }
       const suffix = labels.length ? `\n\nДобавил: ${labels.join("; ")}.` : "";
       push("assistant", (reply || (labels.length ? "Готово." : "Пустой ответ.")) + suffix);
       haptic("success");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      popLastUser();
+      toast.error(e.message);
+    },
   });
 
   const submit = (raw?: string) => {
     const payload = (raw ?? text).trim();
-    if (!payload || send.isPending) return;
+    if (!payload || send.isPending || user?.aiMode === "off") return;
     setText("");
     haptic("medium");
     send.mutate(payload);
@@ -145,7 +153,7 @@ export function ChatView() {
                 {aiOff ? (
                   <>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Нужен свой ключ или доступ к общему пулу.
+                      Агент выключен. В Настройках включите общий пул OpenClaw или сохраните свой ключ.
                     </p>
                     <Button className="mt-3" variant="secondary" onClick={() => navigate({ to: "/settings" })}>
                       Открыть настройки
@@ -201,13 +209,15 @@ export function ChatView() {
                   submit();
                 }
               }}
-              placeholder="Сообщение агенту…"
-              className="flex h-11 min-w-0 flex-1 rounded-full border border-border bg-card px-4 text-sm outline-none"
+              placeholder={aiOff ? "Сначала включите AI в Настройках" : "Сообщение агенту…"}
+              disabled={aiOff || send.isPending}
+              className="flex h-11 min-w-0 flex-1 rounded-full border border-border bg-card px-4 text-sm outline-none disabled:opacity-60"
             />
             <Button
               variant="secondary"
               size="icon"
               aria-label="Голос"
+              disabled={aiOff || send.isPending}
               onClick={() => {
                 startDictation(
                   (t) => submit(t),
@@ -220,7 +230,13 @@ export function ChatView() {
             >
               <Mic className="size-4" />
             </Button>
-            <Button variant="solid" size="icon" aria-label="Отправить" disabled={send.isPending} onClick={() => submit()}>
+            <Button
+              variant="solid"
+              size="icon"
+              aria-label="Отправить"
+              disabled={aiOff || send.isPending}
+              onClick={() => submit()}
+            >
               <Send className="size-4" />
             </Button>
           </div>

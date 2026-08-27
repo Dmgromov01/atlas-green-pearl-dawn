@@ -4,7 +4,7 @@ import { unlockSession } from "@/lib/pin-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { haptic } from "@/lib/haptic";
-import { APP_NAME } from "@/lib/brand";
+import { APP_SHORT } from "@/lib/brand";
 import { BrandMark } from "@/components/brand-mark";
 
 export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
@@ -38,9 +38,9 @@ export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6">
       <BrandMark size={56} className="mx-auto" />
-      <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{APP_NAME}</p>
-      <h1 className="mt-2 text-center text-3xl font-semibold tracking-tight">Здравствуйте{name ? `, ${name}` : ""}</h1>
-      <p className="mt-2 text-center text-sm text-muted-foreground">Введите код доступа к хабу.</p>
+      <p className="mt-3 text-center text-sm font-semibold tracking-tight text-muted-foreground">{APP_SHORT}</p>
+      <h1 className="mt-2 text-center text-2xl font-semibold tracking-tight">Здравствуйте{name ? `, ${name}` : ""}</h1>
+      <p className="mt-2 text-center text-base text-muted-foreground">Введите код доступа к хабу.</p>
       <Input
         className="mt-6"
         type="password"

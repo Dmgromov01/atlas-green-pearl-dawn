@@ -24,7 +24,7 @@ export function TabBar() {
         aria-current={active ? "page" : undefined}
         aria-label={tab.title}
       >
-        <Icon className={fab ? "size-5" : "tabbar__icon"} strokeWidth={active || fab ? 2.2 : 1.8} />
+        <Icon className={fab ? "size-6" : "tabbar__icon"} strokeWidth={active || fab ? 2.2 : 1.8} />
         {fab ? null : <span className="tabbar__label">{tab.shortTitle}</span>}
       </Link>
     );

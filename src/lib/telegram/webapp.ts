@@ -174,9 +174,9 @@ export function tryBiometric(): Promise<boolean> {
     const run = () => {
       if (!bio.isBiometricAvailable) return resolve(false);
       const auth = () =>
-        bio.authenticate({ reason: "Открыть Personal AI Hub" }, (ok) => resolve(Boolean(ok)));
+        bio.authenticate({ reason: "Открыть AI Personal Hub" }, (ok) => resolve(Boolean(ok)));
       if (bio.isAccessGranted) auth();
-      else bio.requestAccess({ reason: "Быстрый вход в Personal AI Hub" }, (ok) => (ok ? auth() : resolve(false)));
+      else bio.requestAccess({ reason: "Быстрый вход в AI Personal Hub" }, (ok) => (ok ? auth() : resolve(false)));
     };
     if (bio.isInited) run();
     else bio.init(run);

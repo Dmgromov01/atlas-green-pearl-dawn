@@ -71,10 +71,10 @@ export function AiAccessCard() {
     <Card className="space-y-3 p-4">
       <SectionLabel>AI-доступ</SectionLabel>
       <p className="text-sm leading-snug text-muted-foreground">
-        Свой ключ (BYOK) шифруется на сервере. Общий пул OpenClaw включает администратор.
+        Общий пул — шлюз OpenClaw на мини-ПК. Свой ключ шифруется на сервере (AES-256-GCM).
       </p>
-      <div className="grid grid-cols-2 gap-1.5">
-        {(["byok", "shared"] as const).map((m) => (
+      <div className="grid grid-cols-3 gap-1.5">
+        {(["off", "byok", "shared"] as const).map((m) => (
           <button
             key={m}
             type="button"
@@ -84,7 +84,7 @@ export function AiAccessCard() {
               user.aiMode === m ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
-            {m === "byok" ? "Мой ключ" : "Общий пул"}
+            {m === "off" ? "Выкл" : m === "byok" ? "Мой ключ" : "Общий пул"}
           </button>
         ))}
       </div>
@@ -136,8 +136,8 @@ export function AiAccessCard() {
           </Button>
         ) : null}
       </div>
-      <Button variant="secondary" className="w-full" disabled={probe.isPending} onClick={() => probe.mutate()}>
-        Проверить шлюз
+      <Button variant="secondary" className="w-full" disabled={probe.isPending || user.aiMode === "off"} onClick={() => probe.mutate()}>
+        Проверить агента
       </Button>
     </Card>
   );

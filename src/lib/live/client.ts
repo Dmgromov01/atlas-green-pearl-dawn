@@ -36,13 +36,16 @@ export function connectHubLive(opts: {
   };
 
   opts.onStatus("retry");
-  void poll();
-  pollTimer = window.setInterval(() => void poll(), 8_000);
+  let startTimer: number | undefined = window.setTimeout(() => {
+    void poll();
+    pollTimer = window.setInterval(() => void poll(), 45_000);
+  }, 4000);
   document.addEventListener("visibilitychange", vis);
 
   return () => {
     stopped = true;
     document.removeEventListener("visibilitychange", vis);
+    if (startTimer) window.clearTimeout(startTimer);
     if (pollTimer) window.clearInterval(pollTimer);
     opts.onStatus("off");
   };

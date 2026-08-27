@@ -25,7 +25,7 @@ type SettingsState = {
   displayName: string;
   onboarded: boolean;
   theme: ThemePref;
-  city: City;
+  city: City | null;
   enabledModules: HubModuleId[] | "all";
   pinSalt: string | null;
   pinHash: string | null;
@@ -35,7 +35,7 @@ type SettingsState = {
   reminders: ReminderPrefs;
   setDisplayName: (name: string) => void;
   setOnboarded: (v: boolean) => void;
-  completeOnboarding: (name: string, city: City) => void;
+  completeOnboarding: (name: string) => void;
   setTheme: (theme: ThemePref) => void;
   setCity: (city: City) => void;
   setEnabledModules: (ids: HubModuleId[] | "all") => void;
@@ -54,7 +54,7 @@ const initial = {
   displayName: "",
   onboarded: false,
   theme: "system" as ThemePref,
-  city: MOSCOW,
+  city: null as City | null,
   enabledModules: "all" as const,
   pinSalt: null as string | null,
   pinHash: null as string | null,
@@ -70,7 +70,7 @@ export const useSettings = create<SettingsState>()(
       ...initial,
       setDisplayName: (displayName) => set({ displayName }),
       setOnboarded: (onboarded) => set({ onboarded }),
-      completeOnboarding: (displayName, city) => set({ displayName, city, onboarded: true }),
+      completeOnboarding: (displayName) => set({ displayName, onboarded: true }),
       setTheme: (theme) => set({ theme }),
       setCity: (city) => set({ city }),
       setEnabledModules: (enabledModules) => set({ enabledModules }),

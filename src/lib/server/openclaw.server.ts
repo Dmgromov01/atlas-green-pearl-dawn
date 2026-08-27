@@ -1,5 +1,6 @@
 import { getSql } from "@/lib/db";
 import { assertPublicHttps } from "@/lib/sanitize";
+import { chatCompletionsUrl, explainGatewayError, normalizeGatewayUrl } from "@/lib/hub/gateway";
 import { rateLimit } from "./limit";
 import type { ByokProvider, KeySource } from "@/lib/hub/identity";
 import { audit, requireHubUser, userById } from "./hub-auth.server";
@@ -18,12 +19,10 @@ function todayUtc() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function envUrl() {
-  return (
-    process.env.OPENCLAW_GATEWAY_URL ||
-    process.env.OPENCLAW_URL ||
-    "http://127.0.0.1:18789"
-  ).replace(/\/$/, "");
+export function envGatewayUrl() {
+  return normalizeGatewayUrl(
+    process.env.OPENCLAW_GATEWAY_URL || process.env.OPENCLAW_URL || "http://127.0.0.1:18789",
+  );
 }
 
 function envToken() {
@@ -75,7 +74,7 @@ export async function resolveAiCredentials(userId: string): Promise<Creds> {
           ? "https://api.openai.com"
           : provider === "custom" && custom
             ? custom
-            : envUrl();
+            : envGatewayUrl();
     if (provider === "custom") assertPublicHttps(baseUrl);
     return { source: "byok", provider, baseUrl, apiKey: key };
   }
@@ -86,8 +85,8 @@ export async function resolveAiCredentials(userId: string): Promise<Creds> {
       throw new Error("Дневная квота общего пула исчерпана");
     }
     const token = envToken();
-    if (!token) throw new Error("Общий шлюз OpenClaw не настроен");
-    return { source: "shared", provider: "openclaw", baseUrl: envUrl(), apiKey: token };
+    if (!token) throw new Error("Общий шлюз OpenClaw не настроен (нет OPENCLAW_GATEWAY_TOKEN)");
+    return { source: "shared", provider: "openclaw", baseUrl: envGatewayUrl(), apiKey: token };
   }
 
   throw new Error("AI недоступен: включите свой ключ или попросите доступ к общему пулу");
@@ -99,7 +98,7 @@ async function bumpQuota(userId: string) {
 }
 
 async function completeOpenAi(creds: Creds, system: string, turns: ChatTurn[], maxTokens: number) {
-  const res = await fetch(`${creds.baseUrl}/v1/chat/completions`, {
+  const res = await fetch(chatCompletionsUrl(creds.baseUrl), {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -108,23 +107,26 @@ async function completeOpenAi(creds: Creds, system: string, turns: ChatTurn[], m
     body: JSON.stringify({
       model: modelFor(creds.provider),
       max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
+      ...(creds.provider === "openclaw" ? { tool_choice: "none" } : {}),
       messages: [{ role: "system", content: system }, ...turns],
     }),
     signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    const name = labelFor(creds.provider);
-    if (res.status === 401 || res.status === 403) throw new Error(`Ключ отклонён (${name})`);
-    if (res.status === 429 || res.status === 402) throw new Error(`Лимит ${name}. Попробуйте позже.`);
-    throw new Error(body.slice(0, 180) || `${name} ${res.status}`);
+    throw new Error(explainGatewayError(res.status, body, labelFor(creds.provider)));
   }
   const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  return json.choices?.[0]?.message?.content?.trim() ?? "";
+  const text = json.choices?.[0]?.message?.content?.trim() ?? "";
+  if (!text) {
+    throw new Error("Шлюз вернул пустой ответ. Проверьте агента OpenClaw и HTTP chatCompletions.");
+  }
+  return text;
 }
 
 async function completeAnthropic(creds: Creds, system: string, turns: ChatTurn[], maxTokens: number) {
-  const res = await fetch(`${creds.baseUrl}/v1/messages`, {
+  const res = await fetch(`${normalizeGatewayUrl(creds.baseUrl)}/v1/messages`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -144,14 +146,20 @@ async function completeAnthropic(creds: Creds, system: string, turns: ChatTurn[]
   return json.content?.map((c) => c.text ?? "").join("").trim() ?? "";
 }
 
-async function runComplete(userId: string, system: string, turns: ChatTurn[], maxTokens: number) {
+async function runComplete(
+  userId: string,
+  system: string,
+  turns: ChatTurn[],
+  maxTokens: number,
+  opts?: { countQuota?: boolean },
+) {
   const creds = await resolveAiCredentials(userId);
   try {
     const text =
       creds.provider === "anthropic"
         ? await completeAnthropic(creds, system, turns, maxTokens)
         : await completeOpenAi(creds, system, turns, maxTokens);
-    if (creds.source === "shared") await bumpQuota(userId);
+    if (creds.source === "shared" && opts?.countQuota !== false) await bumpQuota(userId);
     await audit({
       userId,
       action: "ai_complete",
@@ -185,10 +193,15 @@ export async function chatViaUser(userId: string, messages: ChatTurn[], system: 
 
 export async function probeAiHub(token: string) {
   const { user } = await requireHubUser(token);
-  const out = await completeViaUser(
+  if (!rateLimit(`ai:probe:${user.id}`, 8, 60 * 60_000)) {
+    throw new Error("Слишком много проверок. Подождите немного.");
+  }
+  const out = await runComplete(
     user.id,
-    "Ответь одним словом: ок",
     "Короткий технический пинг. Одно слово.",
+    [{ role: "user", content: "Ответь одним словом: ок" }],
+    32,
+    { countQuota: false },
   );
   return { ok: Boolean(out.text), source: out.source, provider: out.provider };
 }

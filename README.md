@@ -1,6 +1,6 @@
-# Personal AI Hub
+# AI Personal Hub
 
-Семейный хаб R2D2: погода, курсы, задачи, календари iCloud и Google, дайджест, переводчик, чат с OpenClaw. Русский интерфейс, Telegram Mini App.
+Семейный хаб: погода, курсы, задачи, календари iCloud и Google, дайджест, переводчик, агент через OpenClaw. Русский интерфейс.
 
 Репозиторий: [Dmgromov01/atlas-green-pearl-dawn](https://github.com/Dmgromov01/atlas-green-pearl-dawn)
 
@@ -15,8 +15,10 @@ npm ci
 npm run dev
 ```
 
-Сборка: `npm run build`.
+Сборка: `npm run build`. Проверки: `npm run typecheck` и `npm test`.
 
-## Развёртывание
+## Развёртывание и агент
 
-Полные шаги, переменные окружения и готовый промпт для OpenClaw — в [OPENCLAW.md](./OPENCLAW.md).
+Полные шаги, переменные окружения, включение HTTP Chat Completions у OpenClaw и диагностика «агент молчит» — в [OPENCLAW.md](./OPENCLAW.md).
+
+Коротко: хаб лучше поднимать на том же мини-ПК, что и OpenClaw. В конфиге шлюза обязательно `gateway.http.endpoints.chatCompletions.enabled = true`. URL шлюза — `http://127.0.0.1:18789` без `/v1`. Первый открывший сайт становится администратором.

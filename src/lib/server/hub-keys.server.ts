@@ -38,7 +38,7 @@ export async function saveKeyHub(data: {
     detail: data.provider,
   });
   if (user.telegram_id && !user.telegram_id.startsWith("dev:")) {
-    void notifyTelegram(user.telegram_id, "В R2D2 сохранён ваш AI-ключ (BYOK).");
+    void notifyTelegram(user.telegram_id, "В AI Personal Hub сохранён ваш AI-ключ (BYOK).");
   }
   return { ok: true, hint: keyHint(key) };
 }

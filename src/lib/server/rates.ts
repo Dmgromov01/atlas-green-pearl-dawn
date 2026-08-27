@@ -9,7 +9,7 @@ type Cbr = {
 
 export const getRates = createServerFn({ method: "GET" }).handler(async (): Promise<{ rates: RatesMap; ts: number }> => {
   return cached("cbr-rates", 30 * 60_000, async () => {
-    const raw = await fetchJson<Cbr>("https://www.cbr-xml-daily.ru/daily_json.js", 8000);
+    const raw = await fetchJson<Cbr>("https://www.cbr-xml-daily.ru/daily_json.js", 2500);
     const v = raw.Valute ?? {};
     const pick = (code: string) => {
       const row = v[code];

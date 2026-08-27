@@ -220,33 +220,22 @@ function fromWttr(raw: Wttr, city: string, tz: string): WeatherNow {
 }
 
 async function loadWeather(lat: number, lon: number, tz: string, city: string): Promise<WeatherNow> {
-  const errors: string[] = [];
+  const om =
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&current=temperature_2m,wind_speed_10m,weather_code` +
+    `&hourly=temperature_2m,rain,snowfall,weather_code` +
+    `&timezone=${encodeURIComponent(tz)}&forecast_days=2`;
+  const met = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
+  const wttr = `https://wttr.in/${lat},${lon}?format=j1&lang=ru`;
   try {
-    const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
-    const raw = await fetchJson<MetNo>(url, 8000);
-    return fromMetNo(raw, city, tz);
-  } catch (e) {
-    errors.push(e instanceof Error ? e.message : "met");
-  }
-  try {
-    const url = `https://wttr.in/${lat},${lon}?format=j1&lang=ru`;
-    const raw = await fetchJson<Wttr>(url, 8000);
+    return await Promise.any([
+      fetchJson<OpenMeteo>(om, 2200).then((raw) => fromOpenMeteo(raw, city, tz)),
+      fetchJson<MetNo>(met, 2200).then((raw) => fromMetNo(raw, city, tz)),
+    ]);
+  } catch {
+    const raw = await fetchJson<Wttr>(wttr, 2500);
     return fromWttr(raw, city, tz);
-  } catch (e) {
-    errors.push(e instanceof Error ? e.message : "wttr");
   }
-  try {
-    const url =
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,wind_speed_10m,weather_code` +
-      `&hourly=temperature_2m,rain,snowfall,weather_code` +
-      `&timezone=${encodeURIComponent(tz)}&forecast_days=2`;
-    const raw = await fetchJson<OpenMeteo>(url, 8000);
-    return fromOpenMeteo(raw, city, tz);
-  } catch (e) {
-    errors.push(e instanceof Error ? e.message : "om");
-  }
-  throw new Error(errors[0] || "Погода недоступна");
 }
 
 export const getWeather = createServerFn({ method: "POST" })
@@ -290,5 +279,29 @@ export const searchCities = createServerFn({ method: "GET" })
       }));
     } catch {
       return [];
+    }
+  });
+
+export const reverseCity = createServerFn({ method: "GET" })
+  .validator((data: { lat: number; lon: number }) => data)
+  .handler(async ({ data }): Promise<GeoHit | null> => {
+    const lat = Number(data.lat);
+    const lon = Number(data.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=ru&format=json`;
+    try {
+      const raw = await fetchJson<GeoResponse>(url, 2500);
+      const r = raw.results?.[0];
+      if (!r) return null;
+      return {
+        name: r.name,
+        lat: r.latitude,
+        lon: r.longitude,
+        tz: r.timezone || "UTC",
+        country: r.country,
+        admin: r.admin1,
+      };
+    } catch {
+      return null;
     }
   });
