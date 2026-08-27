@@ -6,11 +6,13 @@ import { useSettings } from "@/lib/stores/settings";
 import {
   applyTelegramChrome,
   bootMiniApp,
+  getWebApp,
   loadTelegramSdk,
   startPath,
   telegramUserName,
   tryBiometric,
 } from "@/lib/telegram/webapp";
+import { shouldLoadTelegramSdk } from "@/lib/install-home";
 import { HubRuntime } from "@/components/hub-runtime";
 
 export function TelegramBoot() {
@@ -24,10 +26,13 @@ export function TelegramBoot() {
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
-      await loadTelegramSdk();
-      if (cancelled) return;
-      const wa = bootMiniApp();
-      applyTelegramChrome(wa?.colorScheme === "dark");
+      if (shouldLoadTelegramSdk()) {
+        await loadTelegramSdk();
+        if (cancelled) return;
+        const launched = bootMiniApp();
+        applyTelegramChrome(launched?.colorScheme === "dark");
+      }
+      const wa = getWebApp();
 
       const tgName = telegramUserName();
       const current = useSettings.getState().displayName;

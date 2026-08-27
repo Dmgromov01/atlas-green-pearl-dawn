@@ -13,41 +13,58 @@ export function isIosDevice() {
   return /iPhone|iPod/.test(ua) || /iPad/.test(ua) || (/Macintosh/.test(ua) && touch > 1);
 }
 
+export function looksLikeTelegramWebView() {
+  if (typeof window === "undefined") return false;
+  if (isStandaloneApp()) return false;
+  const ua = navigator.userAgent || "";
+  const w = window as unknown as { TelegramWebviewProxy?: unknown };
+  return /Telegram/i.test(ua) || Boolean(w.TelegramWebviewProxy) || isTelegram();
+}
+
+export function shouldLoadTelegramSdk() {
+  if (typeof window === "undefined") return false;
+  if (isStandaloneApp()) return false;
+  const ua = navigator.userAgent || "";
+  const w = window as unknown as { TelegramWebviewProxy?: unknown };
+  return /Telegram/i.test(ua) || Boolean(w.TelegramWebviewProxy);
+}
+
 export type HomeScreenKind = "telegram" | "ios" | "other";
 
 export function homeScreenKind(): HomeScreenKind {
-  if (isTelegram()) return "telegram";
+  if (looksLikeTelegramWebView()) return "telegram";
   if (isIosDevice()) return "ios";
   return "other";
 }
 
-export function openIosInstallGuide() {
-  const next = new URL(window.location.href);
-  next.searchParams.set("install", "1");
-  next.searchParams.set("platform", "ios");
-  const q = next.searchParams.toString();
-  window.location.assign(`${next.pathname}?${q}`);
+export function publicAppUrl() {
+  return `${window.location.origin}/`;
 }
 
-export function requestHomeScreenIcon(): "added" | "guide" | "prompted" {
+export function installGuideUrl() {
+  const next = new URL("/", window.location.origin);
+  next.searchParams.set("install", "1");
+  next.searchParams.set("platform", "ios");
+  return next.toString();
+}
+
+/** Open the website in Safari — never Telegram's home-screen shortcut. */
+export function openSiteForHomeScreen(): "safari" | "guide" | "copy" | "added" {
   if (isStandaloneApp()) return "added";
+  const url = installGuideUrl();
   const wa = getWebApp();
-  if (wa?.addToHomeScreen) {
+  if (looksLikeTelegramWebView() && wa?.openLink) {
     try {
-      wa.checkHomeScreenStatus?.((status) => {
-        if (status === "added") return;
-        wa.addToHomeScreen?.();
-      });
-      if (!wa.checkHomeScreenStatus) wa.addToHomeScreen();
-      return "prompted";
+      wa.openLink(url, { try_instant_view: false });
+      return "safari";
     } catch {
-      return "prompted";
+      /* fall through */
     }
   }
-  if (isTelegram()) return "prompted";
-  if (isIosDevice()) {
-    openIosInstallGuide();
+  if (isIosDevice() && !looksLikeTelegramWebView()) {
+    window.location.assign(url);
     return "guide";
   }
-  return "prompted";
+  void navigator.clipboard?.writeText(publicAppUrl()).catch(() => {});
+  return "copy";
 }

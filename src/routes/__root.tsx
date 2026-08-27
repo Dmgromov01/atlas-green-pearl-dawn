@@ -15,6 +15,8 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: APP_NAME },
       { name: "theme-color", content: "#F5F7FB" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: APP_NAME },
       { name: "description", content: "Личный хаб: погода, курсы, задачи, дайджест и переводчик." },
     ],
@@ -30,7 +32,6 @@ export const Route = createRootRoute({
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/__grok/manifest.webmanifest" },
     ],
-    scripts: [{ src: "https://telegram.org/js/telegram-web-app.js" }],
   }),
   component: RootDocument,
 });

@@ -29,8 +29,7 @@ export type TgWebApp = {
   ready: () => void;
   expand: () => void;
   close?: () => void;
-  addToHomeScreen?: () => void;
-  checkHomeScreenStatus?: (cb: (status: "unsupported" | "unknown" | "added" | "missed") => void) => void;
+  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
   disableVerticalSwipes?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;

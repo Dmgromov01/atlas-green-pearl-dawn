@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/brand-mark";
 import { haptic } from "@/lib/haptic";
-import { homeScreenKind, isStandaloneApp, requestHomeScreenIcon } from "@/lib/install-home";
+import { homeScreenKind, isStandaloneApp, openSiteForHomeScreen, publicAppUrl } from "@/lib/install-home";
 
 export function HomeScreenCard({ home }: { home?: boolean }) {
   const [standalone, setStandalone] = useState(false);
@@ -21,18 +21,18 @@ export function HomeScreenCard({ home }: { home?: boolean }) {
 
   const add = () => {
     haptic("medium");
-    const result = requestHomeScreenIcon();
+    const result = openSiteForHomeScreen();
     if (result === "added" || isStandaloneApp()) {
       setStandalone(true);
-      toast("Уже на экране Домой");
+      toast("Уже открыто как приложение");
+      return;
+    }
+    if (result === "safari") {
+      toast("В Safari: Поделиться → На экран «Домой»");
       return;
     }
     if (result === "guide") return;
-    if (kind === "telegram") {
-      toast("Если окна не было: в шапке Telegram нажмите ••• → На экран «Домой»");
-    } else {
-      toast("Safari: Поделиться → На экран «Домой»");
-    }
+    toast(`Ссылка скопирована: ${publicAppUrl()}`);
   };
 
   if (standalone) {
@@ -40,8 +40,8 @@ export function HomeScreenCard({ home }: { home?: boolean }) {
       <Card className="flex items-center gap-3 p-3">
         <BrandMark size={40} />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold">На экране Домой</div>
-          <p className="text-xs text-muted-foreground">Ярлык с логотипом уже установлен.</p>
+          <div className="text-sm font-semibold">Приложение на Домой</div>
+          <p className="text-xs text-muted-foreground">Открывается сразу на сайт, без Telegram.</p>
         </div>
       </Card>
     );
@@ -52,17 +52,20 @@ export function HomeScreenCard({ home }: { home?: boolean }) {
       <div className="flex items-center gap-3">
         <BrandMark size={48} />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold">Иконка на iPhone</div>
+          <div className="text-sm font-semibold">Ярлык на сайт</div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            {kind === "telegram"
-              ? "Добавьте хаб на экран Домой — откроется с логотипом, без ленты чатов."
-              : "На рабочем столе появится кнопка запуска с логотипом."}
+            Старый значок из Telegram удалите. Новый откроет хаб как отдельное приложение.
           </p>
         </div>
       </div>
+      <ol className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground">
+        <li>1. Удержание старой иконки → Удалить</li>
+        <li>2. {kind === "telegram" ? "Откройте сайт в Safari" : "Поделиться в Safari"}</li>
+        <li>3. На экран «Домой»</li>
+      </ol>
       <Button className="mt-3 h-11 w-full" onClick={add}>
         <Smartphone className="size-4" />
-        На экран Домой
+        {kind === "telegram" ? "Открыть сайт" : "Показать, как добавить"}
       </Button>
     </Card>
   );
