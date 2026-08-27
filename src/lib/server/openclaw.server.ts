@@ -97,18 +97,32 @@ async function bumpQuota(userId: string) {
   await sql`update hub_users set quota_used = quota_used + 1 where id = ${userId}`;
 }
 
-async function completeOpenAi(creds: Creds, system: string, turns: ChatTurn[], maxTokens: number) {
+async function completeOpenAi(
+  creds: Creds,
+  system: string,
+  turns: ChatTurn[],
+  maxTokens: number,
+  userId: string,
+) {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    authorization: `Bearer ${creds.apiKey}`,
+  };
+  if (creds.provider === "openclaw") {
+    headers["x-openclaw-session-key"] = `hub:${userId}`;
+    const agentId = (process.env.OPENCLAW_AGENT_ID || "").trim();
+    if (agentId) headers["x-openclaw-agent-id"] = agentId;
+  }
   const res = await fetch(chatCompletionsUrl(creds.baseUrl), {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${creds.apiKey}`,
-    },
+    headers,
     body: JSON.stringify({
       model: modelFor(creds.provider),
       max_tokens: maxTokens,
       max_completion_tokens: maxTokens,
-      ...(creds.provider === "openclaw" ? { tool_choice: "none" } : {}),
+      ...(creds.provider === "openclaw"
+        ? { tool_choice: "none", user: `hub:${userId}` }
+        : {}),
       messages: [{ role: "system", content: system }, ...turns],
     }),
     signal: AbortSignal.timeout(45000),
@@ -158,7 +172,7 @@ async function runComplete(
     const text =
       creds.provider === "anthropic"
         ? await completeAnthropic(creds, system, turns, maxTokens)
-        : await completeOpenAi(creds, system, turns, maxTokens);
+        : await completeOpenAi(creds, system, turns, maxTokens, userId);
     if (creds.source === "shared" && opts?.countQuota !== false) await bumpQuota(userId);
     await audit({
       userId,
