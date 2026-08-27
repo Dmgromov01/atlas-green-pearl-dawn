@@ -19,6 +19,13 @@ npm run dev
 
 ## Развёртывание и агент
 
-Полные шаги, переменные окружения, включение HTTP Chat Completions у OpenClaw и диагностика «агент молчит» — в [OPENCLAW.md](./OPENCLAW.md).
+Полные шаги — в [OPENCLAW.md](./OPENCLAW.md).
 
-Коротко: хаб лучше поднимать на том же мини-ПК, что и OpenClaw. В конфиге шлюза обязательно `gateway.http.endpoints.chatCompletions.enabled = true`. URL шлюза — `http://127.0.0.1:18789` без `/v1`. Первый открывший сайт становится администратором.
+Коротко:
+
+- Хаб — отдельный сайт (экран Домой), не Telegram Mini App.
+- Чат в приложении идёт в локальный OpenClaw: `OPENCLAW_GATEWAY_URL=http://127.0.0.1:18789` без `/v1`, модель `openclaw/default`.
+- В шлюзе должно быть `gateway.http.endpoints.chatCompletions.enabled = true`.
+- Пейджер хаба — бот `@HubAlertsbot`. Канал OpenClaw — `@Dmbotmy_bot`. Токены не смешивать.
+- Первый открывший сайт становится администратором. PIN — в Настройках.
+- Watchdog: `scripts/hub-watchdog.sh`.
