@@ -14,8 +14,11 @@ import { Input } from "@/components/ui/input";
 import { DateField, TimeField, combineLocal, nextHourValue } from "@/components/ui/datetime";
 import { haptic } from "@/lib/haptic";
 import { pushEventToPhone, removeEventFromPhone } from "@/lib/calendar/gcal-sync";
-import { formatDayLabel, formatEventTime, localDateKey } from "@/lib/utils";
+import { formatEventTime, localDateKey } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { CalEvent } from "@/lib/hub/types";
+
+const WEEKDAYS = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
 
 function sourceHint(ev: CalEvent) {
   if (ev.source === "ics") return "iCal";
@@ -35,6 +38,7 @@ export function CalendarView() {
   const [date, setDate] = useState(defaults.date);
   const [time, setTime] = useState(defaults.time);
   const [share, setShare] = useState(false);
+  const [selected, setSelected] = useState(defaults.date);
   const token = useHub((s) => s.token);
   const name = useHub((s) => s.user?.displayName);
   const family = useSettings((s) => s.familyShare);
@@ -56,41 +60,77 @@ export function CalendarView() {
       const key = localDateKey(d);
       return {
         key,
-        label: formatDayLabel(d),
+        date: d,
+        dow: WEEKDAYS[d.getDay()] ?? "",
+        num: d.getDate(),
         events: all.filter((e) => localDateKey(e.start) === key).sort((a, b) => a.start.localeCompare(b.start)),
       };
     });
   }, [events]);
 
+  const current = days.find((d) => d.key === selected) ?? days[0];
+
   const addEvent = () => {
     if (!summary.trim()) return;
-    const item = add({
-      start: combineLocal(date, time),
-      summary,
-      shared: family && share,
-      ownerName: name,
-      source: family && share ? "shared" : "local",
-    });
-    if (item && family && share && token) {
-      void hubShareUpsert({ data: { token, kind: "event", payload: item } });
+    try {
+      const item = add({
+        start: combineLocal(date, time),
+        summary,
+        shared: family && share,
+        ownerName: name,
+        source: family && share ? "shared" : "local",
+      });
+      if (item && family && share && token) {
+        void hubShareUpsert({ data: { token, kind: "event", payload: item } });
+      }
+      if (item) pushEventToPhone(token, item, tz);
+      setSelected(date);
+      setSummary("");
+      haptic("medium");
+    } catch {
+      haptic("heavy");
     }
-    if (item) pushEventToPhone(token, item, tz);
-    setSummary("");
-    haptic("medium");
   };
 
   return (
     <AppShell>
-      <Header
-        title="Календарь"
-        subtitle="локально · Google · праздники"
-        backTo="/"
-      />
+      <Header title="Календарь" subtitle="14 дней · локально и с телефона" backTo="/" />
       <Page>
-        <Card className="space-y-2 p-4">
-          <Input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Событие" />
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-1">
+          {days.slice(0, 7).map((d) => (
+            <button
+              key={d.key}
+              type="button"
+              onClick={() => {
+                setSelected(d.key);
+                setDate(d.key);
+                haptic();
+              }}
+              className={cn(
+                "flex w-11 shrink-0 flex-col items-center rounded-2xl border py-2",
+                d.key === selected
+                  ? "border-accent bg-accent text-accent-foreground"
+                  : "border-border bg-card text-foreground",
+              )}
+            >
+              <span className="text-[10px] font-semibold uppercase opacity-80">{d.dow}</span>
+              <span className="text-sm font-bold tabular-nums">{d.num}</span>
+              {d.events.length ? <span className="mt-0.5 size-1 rounded-full bg-current opacity-80" /> : <span className="mt-0.5 size-1" />}
+            </button>
+          ))}
+        </div>
+
+        <Card className="space-y-2 p-3">
+          <Input
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addEvent();
+            }}
+            placeholder="Новое событие"
+          />
           <div className="flex min-w-0 items-center gap-1.5">
-            <DateField value={date} onChange={setDate} />
+            <DateField value={date} onChange={(v) => { setDate(v); setSelected(v); }} />
             <TimeField value={time} onChange={setTime} />
             {family ? (
               <Button
@@ -109,48 +149,49 @@ export function CalendarView() {
             </Button>
           </div>
         </Card>
-        {days.map((d) => (
-          <Card key={d.key} className="p-4">
-            <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{d.label}</div>
-            {d.events.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Нет событий</div>
-            ) : (
-              <div className="space-y-2">
-                {d.events.map((ev) => {
-                  const hint = sourceHint(ev);
-                  const canDelete = ev.source === "local" || ev.source === "shared";
-                  return (
-                    <div key={ev.id} className="flex items-start gap-2 rounded-full bg-muted px-3 py-2">
-                      <span className="mt-0.5 w-16 shrink-0 text-xs font-extrabold tabular-nums text-accent">
-                        {formatEventTime(ev.start, ev.allDay)}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-semibold">{ev.summary}</div>
-                        {hint ? <div className="text-xs text-muted-foreground">{hint}</div> : null}
-                      </div>
-                      {canDelete ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            remove(ev.id);
-                            if ((ev.shared || ev.source === "shared") && token) {
-                              void hubShareDelete({ data: { token, id: ev.id } });
-                            }
-                            removeEventFromPhone(token, ev);
-                          }}
-                          className="grid size-8 place-items-center text-muted-foreground"
-                          aria-label="Удалить"
-                        >
-                          <X className="size-4" />
-                        </button>
-                      ) : null}
+
+        <Card className="p-3">
+          <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {current ? `${current.dow} ${current.num}` : "День"}
+          </div>
+          {current && current.events.length === 0 ? (
+            <div className="py-4 text-center text-sm text-muted-foreground">На этот день событий нет</div>
+          ) : (
+            <div className="space-y-2">
+              {current?.events.map((ev) => {
+                const hint = sourceHint(ev);
+                const canDelete = ev.source === "local" || ev.source === "shared";
+                return (
+                  <div key={ev.id} className="flex items-start gap-2 rounded-2xl bg-muted px-3 py-2">
+                    <span className="mt-0.5 w-16 shrink-0 text-xs font-extrabold tabular-nums text-accent">
+                      {formatEventTime(ev.start, ev.allDay)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold">{ev.summary}</div>
+                      {hint ? <div className="text-xs text-muted-foreground">{hint}</div> : null}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-        ))}
+                    {canDelete ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          remove(ev.id);
+                          if ((ev.shared || ev.source === "shared") && token) {
+                            void hubShareDelete({ data: { token, id: ev.id } });
+                          }
+                          removeEventFromPhone(token, ev);
+                        }}
+                        className="grid size-8 place-items-center text-muted-foreground"
+                        aria-label="Удалить"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
       </Page>
     </AppShell>
   );

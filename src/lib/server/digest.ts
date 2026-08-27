@@ -18,12 +18,12 @@ function tag(xml: string, name: string) {
 function parseFeed(xml: string): DigestPost[] {
   const items = [...xml.matchAll(/<item[\s\S]*?<\/item>/gi), ...xml.matchAll(/<entry[\s\S]*?<\/entry>/gi)];
   const out: DigestPost[] = [];
-  for (const m of items.slice(0, 8)) {
+  for (const m of items.slice(0, 12)) {
     const chunk = m[0];
     const title = stripHtml(tag(chunk, "title"));
     const desc = stripHtml(tag(chunk, "description") || tag(chunk, "summary") || tag(chunk, "content"));
     const date = stripHtml(tag(chunk, "pubDate") || tag(chunk, "updated") || tag(chunk, "published"));
-    const text = [title, desc].filter(Boolean).join(" — ").slice(0, 420);
+    const text = [title, desc].filter(Boolean).join(" — ").slice(0, 900);
     if (text) out.push({ text, date: date || undefined });
   }
   return out;

@@ -88,7 +88,7 @@ export const HUB_MODULES: HubModule[] = [
     description: "Профиль, город, модули",
     icon: Settings,
     path: "/settings",
-    showInTabBar: false,
+    showInTabBar: true,
     showOnHome: false,
     order: 6,
   },
@@ -156,7 +156,7 @@ export function getModule(id: HubModuleId) {
 export function tabModules(enabled: HubModuleId[] | "all" = "all") {
   return HUB_MODULES.filter((m) => {
     if (!m.showInTabBar) return false;
-    if (m.id === "home" || m.id === "chat") return true;
+    if (m.id === "home" || m.id === "chat" || m.id === "settings") return true;
     return enabled === "all" || enabled.includes(m.id);
   }).sort((a, b) => a.order - b.order);
 }

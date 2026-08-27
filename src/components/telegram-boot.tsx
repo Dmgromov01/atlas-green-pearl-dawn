@@ -8,6 +8,7 @@ import {
   bootMiniApp,
   loadTelegramSdk,
   startPath,
+  telegramUserName,
   tryBiometric,
 } from "@/lib/telegram/webapp";
 import { HubRuntime } from "@/components/hub-runtime";
@@ -28,6 +29,12 @@ export function TelegramBoot() {
       const wa = bootMiniApp();
       applyTelegramChrome(wa?.colorScheme === "dark");
 
+      const tgName = telegramUserName();
+      const current = useSettings.getState().displayName;
+      if (tgName && (!current || current === "Гость")) {
+        useSettings.getState().setDisplayName(tgName);
+      }
+
       const existing = readHubToken();
       if (existing) {
         try {
@@ -44,7 +51,7 @@ export function TelegramBoot() {
           data: {
             initData: wa?.initData || undefined,
             deviceId: deviceId(),
-            displayName: name,
+            displayName: useSettings.getState().displayName || tgName,
             biometric,
           },
         });

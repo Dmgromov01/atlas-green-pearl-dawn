@@ -27,6 +27,7 @@ import { AiAccessCard } from "@/components/settings/ai-access";
 import { GcalCard } from "@/components/settings/gcal-card";
 import { IcloudCard } from "@/components/settings/icloud-card";
 import { FamilyCard } from "@/components/settings/family-card";
+import { HomeScreenCard } from "@/components/settings/home-screen-card";
 import { haptic } from "@/lib/haptic";
 import { HUB_MODULES } from "@/lib/hub/registry";
 import type { HubModuleId } from "@/lib/hub/types";
@@ -123,6 +124,8 @@ export function SettingsView() {
             Сохранить имя
           </Button>
         </Card>
+
+        <HomeScreenCard />
 
         <AiAccessCard />
 

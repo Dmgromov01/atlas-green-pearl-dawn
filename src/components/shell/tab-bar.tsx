@@ -32,9 +32,9 @@ export function TabBar() {
 
   return (
     <nav className="tabbar" aria-label="Основная навигация">
-      {home ? item(home) : null}
+      <div className="tabbar__side tabbar__side--left">{home ? item(home) : null}</div>
       <div className="tabbar__slot">{chat ? item(chat, true) : null}</div>
-      {more ? item(more) : null}
+      <div className="tabbar__side tabbar__side--right">{more ? item(more) : <span className="tabbar__item" aria-hidden />}</div>
     </nav>
   );
 }

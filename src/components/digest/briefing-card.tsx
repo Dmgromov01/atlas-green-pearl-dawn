@@ -21,9 +21,9 @@ export function BriefingCard({
 }) {
   const ready = (blocks ?? []).filter((b) => b.posts.length > 0);
   const items = ready.flatMap((b) =>
-    b.posts.slice(0, 3).map((p) => ({ source: b.title, text: p.text })),
+    b.posts.slice(0, 5).map((p) => ({ source: b.title, text: p.text })),
   );
-  const fallback = extractiveBrief(ready).slice(0, compact ? 3 : 6);
+  const fallback = extractiveBrief(ready).slice(0, compact ? 5 : 12);
 
   const brief = useQuery({
     queryKey: ["brief", items.map((i) => i.text.slice(0, 32)).join("|")],
@@ -39,7 +39,7 @@ export function BriefingCard({
 
   const bullets = (brief.data?.bullets?.length ? brief.data.bullets : fallback).slice(
     0,
-    compact ? 3 : 6,
+    compact ? 5 : 12,
   );
   const Comp = onOpen ? "button" : "div";
 
@@ -65,7 +65,7 @@ export function BriefingCard({
           {bullets.map((item, i) => (
             <li key={i} className="flex gap-2 text-[13px] leading-snug text-foreground">
               <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-accent" />
-              <span className={cn("min-w-0", compact && "line-clamp-2")}>{item}</span>
+              <span className={cn("min-w-0", compact && "line-clamp-3")}>{item}</span>
             </li>
           ))}
         </ul>

@@ -4,8 +4,8 @@ import { cached } from "./cache";
 import { rateLimit } from "./limit";
 import { extractiveBrief, parseBriefBullets } from "@/lib/digest/brief";
 
-const MAX_POSTS = 8;
-const MAX_CHARS = 3500;
+const MAX_POSTS = 16;
+const MAX_CHARS = 7000;
 
 export const summarizeDigest = createServerFn({ method: "POST" })
   .validator((data: { title: string; posts: string[] }) => data)
@@ -29,12 +29,12 @@ export const summarizeDigest = createServerFn({ method: "POST" })
         },
         body: JSON.stringify({
           model: "grok-4.5",
-          max_tokens: 280,
+          max_tokens: 520,
           messages: [
             {
               role: "system",
               content:
-                "Ты редактор короткого новостного дайджеста. 3–5 предложений на русском, факты без воды, без эмодзи, без заголовка.",
+                "Ты редактор новостного дайджеста. 5–8 предложений на русском: факты, цифры, имена. Без воды, без эмодзи, без заголовка.",
             },
             { role: "user", content: body },
           ],
@@ -50,16 +50,23 @@ export const summarizeDigest = createServerFn({ method: "POST" })
 export const briefAllSources = createServerFn({ method: "POST" })
   .validator((data: { items: { source: string; text: string }[] }) => data)
   .handler(async ({ data }): Promise<{ bullets: string[]; source: "ai" | "extractive" }> => {
-    const items = (data.items ?? []).slice(0, 24);
+    const items = (data.items ?? []).slice(0, 36);
     const fallback = extractiveBrief(
-      items.map((it) => ({ title: it.source, posts: [{ text: it.text }] })),
+      Object.values(
+        items.reduce<Record<string, { title: string; posts: { text: string }[] }>>((acc, it) => {
+          const key = it.source || "Источник";
+          acc[key] ??= { title: key, posts: [] };
+          acc[key].posts.push({ text: it.text });
+          return acc;
+        }, {}),
+      ),
     );
     const apiKey = process.env.XAI_API_KEY;
     if (!apiKey || items.length === 0) return { bullets: fallback, source: "extractive" };
     if (!rateLimit("ai:brief", 10, 10 * 60_000)) return { bullets: fallback, source: "extractive" };
 
     const blob = items
-      .map((it) => `${it.source}: ${clampText(it.text, 180)}`)
+      .map((it) => `${it.source}: ${clampText(it.text, 280)}`)
       .join("\n");
     const body = clampText(blob, MAX_CHARS);
     const cacheKey = `brief:${items.length}:${items[0]?.text.slice(0, 40) ?? ""}`;
@@ -74,12 +81,12 @@ export const briefAllSources = createServerFn({ method: "POST" })
           },
           body: JSON.stringify({
             model: "grok-4.5",
-            max_tokens: 320,
+            max_tokens: 700,
             messages: [
               {
                 role: "system",
                 content:
-                  "Сводка дня по всем источникам сразу. Верни 4–6 пунктов. Каждый пункт с новой строки, начинается с «• », одно предложение до 90 знаков. Без вступления, без заголовка, без эмодзи. Общая картина дня, не копируй заголовки подряд.",
+                  "Сводка дня по всем источникам. Верни 8–12 пунктов. Каждый пункт с новой строки, начинается с «• », формат «Источник — факт». 1–2 предложения, до 180 знаков, с цифрами и именами если они есть. Без вступления, без заголовка, без эмодзи. Не сжимай день в одно общее предложение.",
               },
               { role: "user", content: body },
             ],

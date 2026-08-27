@@ -5,7 +5,6 @@ import { haptic } from "@/lib/haptic";
 import { useTelegramBack } from "@/lib/telegram/webapp";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/brand-mark";
-import { APP_NAME } from "@/lib/brand";
 
 export function Header({
   title,
@@ -13,15 +12,28 @@ export function Header({
   backTo,
   right,
   brand,
+  greet,
 }: {
-  title: ReactNode;
+  title?: ReactNode;
   subtitle?: string;
   backTo?: string;
   right?: ReactNode;
   brand?: boolean;
+  greet?: string;
 }) {
   const navigate = useNavigate();
   const tgBack = useTelegramBack(backTo);
+  if (greet) {
+    return (
+      <header className="sticky top-0 z-20 flex min-h-12 items-center gap-2.5 bg-background px-4 pt-[max(8px,env(safe-area-inset-top))] pb-1 sm:px-6">
+        <BrandMark size={28} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[17px] font-semibold leading-tight tracking-tight text-foreground">{greet}</div>
+        </div>
+        <div className="flex shrink-0 items-center justify-center">{right}</div>
+      </header>
+    );
+  }
   return (
     <header className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-2 bg-background px-4 pt-[env(safe-area-inset-top)] sm:px-6">
       {backTo && !tgBack ? (
@@ -42,8 +54,8 @@ export function Header({
       <div className="min-w-0 flex-1 px-1 text-center">
         {brand ? (
           <div className="flex items-center justify-center gap-1.5">
-            <BrandMark size={40} />
-            <div className="min-w-0 truncate text-lg font-bold tracking-tight text-foreground">{APP_NAME}</div>
+            <BrandMark size={28} />
+            <div className="min-w-0 truncate text-base font-bold tracking-tight text-foreground">{title}</div>
           </div>
         ) : (
           <div className="truncate text-base font-semibold tracking-tight text-foreground">{title}</div>

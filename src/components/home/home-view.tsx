@@ -1,8 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Brain, Languages, Settings } from "lucide-react";
+import { Brain, Languages } from "lucide-react";
 import { AppShell } from "@/components/shell/app-shell";
 import { Header } from "@/components/shell/header";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ServiceRow } from "@/components/shell/service-row";
 import { WeatherCard } from "@/components/weather/weather-card";
@@ -12,6 +11,7 @@ import { TasksCard } from "@/components/home/tasks-card";
 import { CalendarCard } from "@/components/home/calendar-card";
 import { InboxCard } from "@/components/home/inbox-card";
 import { PasswordCard } from "@/components/home/password-card";
+import { HomeScreenCard } from "@/components/settings/home-screen-card";
 import { useSettings } from "@/lib/stores/settings";
 import { haptic } from "@/lib/haptic";
 
@@ -21,31 +21,16 @@ export function HomeView() {
   const enabled = useSettings((s) => s.enabledModules);
   const show = (id: "tasks" | "calendar" | "passwords" | "fun" | "translate" | "inbox") =>
     enabled === "all" || enabled.includes(id);
+  const greet = name && name !== "Гость" ? `Привет, ${name}` : "Привет";
 
   return (
     <AppShell>
-      <Header
-        title="Personal AI Hub"
-        subtitle={name ? `Привет, ${name}` : undefined}
-        brand
-        right={
-          <Button
-            variant="secondary"
-            size="icon-sm"
-            aria-label="Настройки"
-            onClick={() => {
-              haptic();
-              navigate({ to: "/settings" });
-            }}
-          >
-            <Settings className="size-4" />
-          </Button>
-        }
-      />
+      <Header greet={greet} />
       <div className="hub-home">
         <SummaryStrip />
         <WeatherCard />
         <div className="hub-grid px-4 sm:px-6">
+          <HomeScreenCard home />
           <TodayCard />
           {show("inbox") ? <InboxCard /> : null}
           {show("tasks") ? <TasksCard /> : null}

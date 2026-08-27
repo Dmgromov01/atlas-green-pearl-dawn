@@ -1,7 +1,7 @@
 import { cn, formatDayLabel, localDateKey } from "@/lib/utils";
 
 const field =
-  "h-9 appearance-none rounded-full border border-border bg-muted px-3 text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "h-9 min-w-0 appearance-none rounded-full border border-border bg-muted px-3 text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 function slots() {
   const out: string[] = [];
@@ -33,14 +33,15 @@ export function DateField({
     d.setDate(start.getDate() + i);
     return { key: localDateKey(d), label: formatDayLabel(d) };
   });
+  const list = opts.some((o) => o.key === value) ? opts : [{ key: value, label: value }, ...opts];
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={cn(field, "min-w-0 flex-1", className)}
+      className={cn(field, "flex-1", className)}
       aria-label="Дата"
     >
-      {opts.map((o) => (
+      {list.map((o) => (
         <option key={o.key} value={o.key}>
           {o.label}
         </option>
@@ -60,21 +61,18 @@ export function TimeField({
 }) {
   const list = TIMES.includes(value) ? TIMES : [value, ...TIMES];
   return (
-    <div className={cn("time-oval", className)}>
-      <span className="time-oval__value">{value}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="time-oval__select"
-        aria-label="Время"
-      >
-        {list.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
-    </div>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(field, "w-[4.9rem] flex-none tabular-nums", className)}
+      aria-label="Время"
+    >
+      {list.map((t) => (
+        <option key={t} value={t}>
+          {t}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -90,5 +88,9 @@ export function nextHourValue() {
 export function combineLocal(date: string, time: string) {
   const t = time || "09:00";
   const d = date || nextHourValue().date;
-  return new Date(`${d}T${t}:00`).toISOString();
+  const [y, mo, day] = d.split("-").map((n) => Number(n));
+  const [hh, mm] = t.split(":").map((n) => Number(n));
+  const local = new Date(y || 2026, (mo || 1) - 1, day || 1, hh || 0, mm || 0, 0, 0);
+  if (Number.isNaN(local.getTime())) return new Date().toISOString();
+  return local.toISOString();
 }

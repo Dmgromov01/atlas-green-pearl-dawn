@@ -115,7 +115,7 @@
   body,
   #app {
     min-height: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
   html.tg-mini,
   html.tg-mini body {
@@ -358,16 +358,28 @@
   left: 0;
   right: 0;
   z-index: 30;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   width: 100%;
   max-width: var(--shell-max);
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
   margin-inline: auto;
   align-items: stretch;
-  padding-inline: 6px;
+  padding-inline: 4px;
   border-top: 1px solid var(--border);
   background: var(--card);
   padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar__side {
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+}
+.tabbar__side--left {
+  justify-content: flex-start;
+}
+.tabbar__side--right {
+  justify-content: flex-end;
 }
 .tabbar__item {
   display: flex;
@@ -381,18 +393,18 @@
   color: var(--muted-foreground);
 }
 .tabbar__slot {
-  flex: 1;
-  min-width: 0;
   display: flex;
+  width: 56px;
   align-items: center;
   justify-content: center;
+  justify-self: center;
 }
 .tabbar__fab {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-top: -10px;
+  width: 48px;
+  height: 48px;
+  margin-top: -12px;
   border-radius: 999px;
   background: var(--accent);
   color: var(--accent-foreground);
@@ -491,6 +503,7 @@
     left: auto;
     right: auto;
     transform: none;
+    display: flex;
     height: 100dvh;
     width: auto;
     max-width: none;
@@ -500,6 +513,10 @@
     padding: 20px 10px;
     border-right: 1px solid var(--border);
     border-top: none;
+    grid-template-columns: none;
+  }
+  .tabbar__side {
+    display: contents;
   }
   .tabbar__item {
     flex: none;
