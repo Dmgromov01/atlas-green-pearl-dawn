@@ -81,9 +81,9 @@ export function ChatView() {
       }));
       return hubAiChat({ data: { token, messages: history, context: dayContext() } });
     },
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       const { text: reply, actions, fenced } = splitHubReply(res.text || "");
-      const labels = applyHubActions(actions, {
+      const labels = await applyHubActions(actions, {
         token,
         name: user?.displayName,
         family,

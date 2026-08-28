@@ -18,6 +18,11 @@ export type ReminderRow = {
   owner_name?: string;
 };
 
+function reminderChatId(telegramId: string | null) {
+  if (telegramId && !telegramId.startsWith("dev:")) return telegramId;
+  return (process.env.TELEGRAM_OWNER_ID || "").trim() || null;
+}
+
 function uid() {
   return randomBytes(16).toString("hex");
 }
@@ -127,8 +132,9 @@ export async function fireDueReminders() {
     if (row.delivered_at && new Date(row.due_at).getTime() <= new Date(row.delivered_at).getTime()) continue;
     const who = row.source === "agent" ? "агент" : row.display_name || "семья";
     const body = `Напоминание (${who}): ${row.text}`;
-    if (row.telegram_id && !row.telegram_id.startsWith("dev:")) {
-      await notifyTelegram(row.telegram_id, body);
+    const chat = reminderChatId(row.telegram_id);
+    if (chat) {
+      await notifyTelegram(chat, body);
     }
     if (row.recurrence === "none") {
       await sql`update hub_reminders set delivered_at = now() where id = ${row.id}`;

@@ -16,8 +16,6 @@ import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as DigestRouteImport } from './routes/digest'
-import { Route as FunRouteImport } from './routes/fun'
-import { Route as RatesRouteImport } from './routes/rates'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as StatusRouteImport } from './routes/status'
@@ -58,16 +56,6 @@ const DigestRoute = DigestRouteImport.update({
   path: '/digest',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FunRoute = FunRouteImport.update({
-  id: '/fun',
-  path: '/fun',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RatesRoute = RatesRouteImport.update({
-  id: '/rates',
-  path: '/rates',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -97,8 +85,6 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/chat': typeof ChatRoute
   '/digest': typeof DigestRoute
-  '/fun': typeof FunRoute
-  '/rates': typeof RatesRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
   '/status': typeof StatusRoute
@@ -112,8 +98,6 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/chat': typeof ChatRoute
   '/digest': typeof DigestRoute
-  '/fun': typeof FunRoute
-  '/rates': typeof RatesRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
   '/status': typeof StatusRoute
@@ -128,8 +112,6 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/chat': typeof ChatRoute
   '/digest': typeof DigestRoute
-  '/fun': typeof FunRoute
-  '/rates': typeof RatesRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
   '/status': typeof StatusRoute
@@ -145,8 +127,6 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/chat'
     | '/digest'
-    | '/fun'
-    | '/rates'
     | '/settings'
     | '/sources'
     | '/status'
@@ -160,8 +140,6 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/chat'
     | '/digest'
-    | '/fun'
-    | '/rates'
     | '/settings'
     | '/sources'
     | '/status'
@@ -175,8 +153,6 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/chat'
     | '/digest'
-    | '/fun'
-    | '/rates'
     | '/settings'
     | '/sources'
     | '/status'
@@ -191,8 +167,6 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   ChatRoute: typeof ChatRoute
   DigestRoute: typeof DigestRoute
-  FunRoute: typeof FunRoute
-  RatesRoute: typeof RatesRoute
   SettingsRoute: typeof SettingsRoute
   SourcesRoute: typeof SourcesRoute
   StatusRoute: typeof StatusRoute
@@ -250,20 +224,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DigestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/fun': {
-      id: '/fun'
-      path: '/fun'
-      fullPath: '/fun'
-      preLoaderRoute: typeof FunRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/rates': {
-      id: '/rates'
-      path: '/rates'
-      fullPath: '/rates'
-      preLoaderRoute: typeof RatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -303,8 +263,6 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   ChatRoute: ChatRoute,
   DigestRoute: DigestRoute,
-  FunRoute: FunRoute,
-  RatesRoute: RatesRoute,
   SettingsRoute: SettingsRoute,
   SourcesRoute: SourcesRoute,
   StatusRoute: StatusRoute,

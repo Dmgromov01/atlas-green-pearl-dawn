@@ -1,4 +1,5 @@
 import { hubShareUpsert } from "@/lib/server/hub-share";
+import { reminderCreate } from "@/lib/server/reminders";
 import { useCalendar } from "@/lib/stores/calendar";
 import { useInbox } from "@/lib/stores/inbox";
 import { useTasks } from "@/lib/stores/tasks";
@@ -6,21 +7,27 @@ import { pushEventToPhone } from "@/lib/calendar/gcal-sync";
 import { useSettings } from "@/lib/stores/settings";
 import { parseDue, parseStartIso } from "./action-parse";
 import type { HubAction } from "./action-parse";
+import type { Recurrence } from "@/lib/reminders/parse";
 
 export type { HubAction } from "./action-parse";
 export { parseDue, parseStartIso, splitHubReply } from "./action-parse";
 
-export function applyHubActions(
+function dueIso(raw?: string | null) {
+  const ts = parseDue(raw);
+  return ts ? new Date(ts).toISOString() : undefined;
+}
+
+export async function applyHubActions(
   actions: HubAction[],
   opts?: { token?: string; name?: string; family?: boolean },
-): string[] {
+): Promise<string[]> {
   const labels: string[] = [];
   const family = Boolean(opts?.family);
   const token = opts?.token;
   const name = opts?.name;
 
   for (const a of actions) {
-    const shared = family && Boolean(a.shared);
+    const shared = family && a.op !== "reminder" && Boolean(a.shared);
     if (a.op === "task") {
       const id = useTasks.getState().add({
         text: a.text,
@@ -49,6 +56,23 @@ export function applyHubActions(
       }
       pushEventToPhone(token, item, useSettings.getState().city?.tz ?? "UTC");
       labels.push(`событие «${a.summary}»`);
+    } else if (a.op === "reminder") {
+      if (!token) continue;
+      const recurrence = (a.repeat ?? "none") as Recurrence;
+      try {
+        await reminderCreate({
+          data: {
+            token,
+            text: a.text,
+            dueAt: dueIso(a.due),
+            recurrence,
+            source: "agent",
+          },
+        });
+        labels.push(`напоминание «${a.text}»`);
+      } catch {
+        labels.push("напоминание не сохранилось");
+      }
     } else {
       const note = useInbox.getState().add({ text: a.text, shared, ownerName: name });
       if (!note) continue;

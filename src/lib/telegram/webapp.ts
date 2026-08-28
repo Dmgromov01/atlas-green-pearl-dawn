@@ -52,7 +52,6 @@ const START_PATH: Record<string, string> = {
   calendar: "/calendar",
   settings: "/settings",
   digest: "/digest",
-  rates: "/rates",
   translate: "/translate",
   admin: "/admin",
 };

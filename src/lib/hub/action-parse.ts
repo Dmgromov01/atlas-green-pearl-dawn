@@ -3,7 +3,8 @@ import type { RepeatRule } from "./types.ts";
 export type HubAction =
   | { op: "task"; text: string; due?: string | null; repeat?: RepeatRule; shared?: boolean }
   | { op: "event"; summary: string; start: string; shared?: boolean }
-  | { op: "note"; text: string; shared?: boolean };
+  | { op: "note"; text: string; shared?: boolean }
+  | { op: "reminder"; text: string; due?: string | null; repeat?: RepeatRule };
 
 const REPEATS = new Set<RepeatRule>(["none", "daily", "weekdays", "weekly"]);
 const FENCE = /<<<HUB\s*([\s\S]*?)\s*HUB>>>/;
@@ -78,6 +79,13 @@ function normalizeAction(raw: unknown): HubAction | null {
     const text = String(o.text ?? "").trim().slice(0, 800);
     if (!text) return null;
     return { op: "note", text, shared };
+  }
+  if (op === "reminder" || op === "remind") {
+    const text = String(o.text ?? "").trim().slice(0, 280);
+    if (!text) return null;
+    const repeat = REPEATS.has(o.repeat as RepeatRule) ? (o.repeat as RepeatRule) : "none";
+    const due = typeof o.due === "string" ? o.due : typeof o.at === "string" ? String(o.at) : null;
+    return { op: "reminder", text, due, repeat };
   }
   return null;
 }

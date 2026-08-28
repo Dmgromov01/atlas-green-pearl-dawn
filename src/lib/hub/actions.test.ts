@@ -25,6 +25,18 @@ describe("splitHubReply", () => {
     assert.equal(actions[0]?.op, "note");
   });
 
+  it("reads reminder actions from the agent fence", () => {
+    const raw = `Ок.\n<<<HUB\n{"actions":[{"op":"reminder","text":"забрать посылку","due":"2026-08-29T09:00","repeat":"none"}]}\nHUB>>>`;
+    const { actions } = splitHubReply(raw);
+    assert.equal(actions[0]?.op, "reminder");
+    assert.deepEqual(actions[0], {
+      op: "reminder",
+      text: "забрать посылку",
+      due: "2026-08-29T09:00",
+      repeat: "none",
+    });
+  });
+
   it("ignores malformed json", () => {
     const { text, actions, fenced } = splitHubReply("привет <<<HUB {nope} HUB>>>");
     assert.equal(text, "привет");
