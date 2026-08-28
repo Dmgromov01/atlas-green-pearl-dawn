@@ -10,15 +10,7 @@ export const hubStatus = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const hubLogin = createServerFn({ method: "POST" })
-  .validator(
-    (data: {
-      initData?: string;
-      pin?: string;
-      hintUserId?: string;
-      displayName?: string;
-      biometric?: boolean;
-    }) => data,
-  )
+  .validator((data: { pin?: string; hintUserId?: string }) => data)
   .handler(async ({ data }): Promise<SessionOrError> => {
     const { loginHub } = await import("./hub-auth.server");
     return loginHub(data);
@@ -50,13 +42,6 @@ export const hubSetPin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { setPinHub } = await import("./hub-auth.server");
     return setPinHub(data.token, data.pin);
-  });
-
-export const hubClearPin = createServerFn({ method: "POST" })
-  .validator((data?: { token?: string }) => data ?? {})
-  .handler(async ({ data }) => {
-    const { clearPinHub } = await import("./hub-auth.server");
-    return clearPinHub(data.token);
   });
 
 export const hubCreateInvite = createServerFn({ method: "POST" })

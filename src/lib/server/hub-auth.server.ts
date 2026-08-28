@@ -1,7 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { getSql } from "@/lib/db";
-import { botToken, verifyInitData } from "@/lib/telegram/init-data";
-import { notifyTelegram } from "@/lib/telegram/bot";
 import type { AiMode, AuthMethod, HubRole, HubUserPublic, KeySource } from "@/lib/hub/identity";
 import { SESSION_TTL_SEC } from "@/lib/hub/identity";
 import { rateLimit } from "./limit";
@@ -145,53 +143,19 @@ export async function requireHubUser(token?: string | null) {
   return { user, method: ses.auth_method, token: raw };
 }
 
-async function countAdminsReady() {
+async function countOwners() {
   const sql = await getSql();
   const rows = await sql<{ n: number }>`
     select count(*)::int as n from hub_users
-    where role = 'admin' and allowed = true and pin_hash is not null
+    where role = 'admin' and allowed = true
   `;
-  const pinReady = Number(rows[0]?.n ?? 0);
-  try {
-    const pass = await sql<{ n: number }>`
-      select count(*)::int as n
-      from hub_webauthn w
-      join hub_users u on u.id = w.user_id
-      where u.role = 'admin' and u.allowed = true
-    `;
-    return pinReady + Number(pass[0]?.n ?? 0);
-  } catch {
-    return pinReady;
-  }
-}
-
-async function firstUnclaimedAdmin() {
-  const sql = await getSql();
-  const rows = await sql<UserRow>`
-    select * from hub_users
-    where role = 'admin' and allowed = true and pin_hash is null
-    order by created_at asc
-    limit 1
-  `;
-  return rows[0] ?? null;
+  return Number(rows[0]?.n ?? 0);
 }
 
 export async function hubAuthStatus() {
   await ensureHubSchema();
-  const ready = await countAdminsReady();
-  return { needsSetup: ready === 0 };
-}
-
-async function upsertTelegramUser(tg: {
-  id: number;
-  first_name?: string;
-  username?: string;
-}) {
-  const sql = await getSql();
-  const tid = String(tg.id);
-  const existing = await sql<UserRow>`select * from hub_users where telegram_id = ${tid} limit 1`;
-  if (existing[0]) return existing[0];
-  return null;
+  const owners = await countOwners();
+  return { needsSetup: owners === 0 };
 }
 
 async function findByPin(pin: string, hintUserId?: string) {
@@ -224,60 +188,25 @@ function sessionResult(row: UserRow, ses: { token: string; expiresAt: string }, 
 }
 
 export async function loginHub(data: {
-  initData?: string;
   pin?: string;
   hintUserId?: string;
-  displayName?: string;
-  biometric?: boolean;
 }): Promise<{ token: string; expiresAt: string; user: HubUserPublic } | { error: string }> {
-  const tokenEnv = botToken();
-  let method: AuthMethod = "pin";
-  let row: UserRow | null = null;
+  if (!data.pin) return { error: "Нужен Face ID или PIN" };
+  if (!rateLimit("pin-login", 12, 15 * 60_000)) return { error: "Слишком много попыток. Подождите." };
+  if (!/^\d{4,8}$/.test(data.pin)) return { error: "PIN: 4–8 цифр" };
 
-  if (data.initData && tokenEnv) {
-    const tg = verifyInitData(data.initData, tokenEnv);
-    if (!tg) {
-      await audit({ action: "login_fail_initdata", telegramId: null, detail: "bad hmac" });
-      return { error: "Неверная подпись Telegram" };
-    }
-    row = await upsertTelegramUser(tg);
-    if (!row) return { error: "Этот Telegram ещё не в семье. Нужен инвайт." };
-    method = data.biometric ? "biometric" : "initData";
-    if (row.pin_hash && data.pin && !pinOk(data.pin, row.pin_salt, row.pin_hash)) {
-      await audit({ userId: row.id, telegramId: row.telegram_id, action: "login_fail_pin", authMethod: method });
-      return { error: "Неверный PIN" };
-    }
-    if (data.pin) method = "pin";
-  } else if (data.pin) {
-    if (!rateLimit("pin-login", 12, 15 * 60_000)) return { error: "Слишком много попыток. Подождите." };
-    if (!/^\d{4,8}$/.test(data.pin)) return { error: "PIN: 4–8 цифр" };
-    row = await findByPin(data.pin, data.hintUserId);
-    method = "pin";
-    if (!row) {
-      await audit({ action: "login_fail_pin", detail: "no match" });
-      return { error: "Неверный PIN" };
-    }
-  } else {
-    return { error: "Нужен Face ID или PIN" };
+  const row = await findByPin(data.pin, data.hintUserId);
+  if (!row) {
+    await audit({ action: "login_fail_pin", detail: "no match" });
+    return { error: "Неверный PIN" };
   }
-
   if (!row.allowed) {
-    await audit({ userId: row.id, telegramId: row.telegram_id, action: "login_denied", authMethod: method });
+    await audit({ userId: row.id, action: "login_denied", authMethod: "pin" });
     return { error: "Доступ запрещён. Обратитесь к владельцу." };
   }
 
-  const ses = await issueSession(row.id, method);
-  await audit({ userId: row.id, telegramId: row.telegram_id, action: "login_ok", authMethod: method });
-  if (row.telegram_id && !row.telegram_id.startsWith("dev:")) {
-    void notifyTelegram(
-      row.telegram_id,
-      method === "biometric"
-        ? "Вход в AI Personal Hub по Face ID."
-        : method === "initData"
-          ? "Вход в AI Personal Hub через Telegram."
-          : "Вход в AI Personal Hub по PIN.",
-    );
-  }
+  const ses = await issueSession(row.id, "pin");
+  await audit({ userId: row.id, action: "login_ok", authMethod: "pin" });
   return sessionResult(row, ses, await publicUser(row));
 }
 
@@ -290,40 +219,22 @@ export async function setupOwnerHub(data: {
   if (!name) return { error: "Укажите имя" };
   if (!rateLimit("setup-owner", 6, 30 * 60_000)) return { error: "Слишком много попыток" };
 
-  const ready = await countAdminsReady();
-  if (ready > 0) return { error: "Владелец уже назначен. Войдите или попросите инвайт." };
-
-  const sql = await getSql();
-  const existing = await firstUnclaimedAdmin();
-  const salt = randomBytes(16).toString("hex");
-  const hash = hashPin(data.pin, salt);
-  const ownerTg = (process.env.TELEGRAM_OWNER_ID || "").trim() || null;
-  let row: UserRow;
-
-  if (existing) {
-    await sql`
-      update hub_users
-      set display_name = ${name}, pin_salt = ${salt}, pin_hash = ${hash},
-          allowed = true, role = 'admin', allow_global_ai = true, ai_mode = 'shared',
-          telegram_id = case
-            when telegram_id is null or telegram_id like 'dev:%' then ${ownerTg}
-            else telegram_id
-          end
-      where id = ${existing.id}
-    `;
-    row = (await sql<UserRow>`select * from hub_users where id = ${existing.id} limit 1`)[0]!;
-  } else {
-    const id = uid();
-    await sql`
-      insert into hub_users (
-        id, telegram_id, display_name, role, allowed, allow_global_ai, ai_mode, pin_salt, pin_hash
-      ) values (
-        ${id}, ${ownerTg}, ${name}, 'admin', true, true, 'shared', ${salt}, ${hash}
-      )
-    `;
-    row = (await sql<UserRow>`select * from hub_users where id = ${id} limit 1`)[0]!;
+  if ((await countOwners()) > 0) {
+    return { error: "Владелец уже назначен. Войдите или попросите инвайт." };
   }
 
+  const sql = await getSql();
+  const salt = randomBytes(16).toString("hex");
+  const hash = hashPin(data.pin, salt);
+  const id = uid();
+  await sql`
+    insert into hub_users (
+      id, display_name, role, allowed, allow_global_ai, ai_mode, pin_salt, pin_hash
+    ) values (
+      ${id}, ${name}, 'admin', true, true, 'shared', ${salt}, ${hash}
+    )
+  `;
+  const row = (await sql<UserRow>`select * from hub_users where id = ${id} limit 1`)[0]!;
   await wipeSessions(row.id);
   const ses = await issueSession(row.id, "pin");
   await audit({ userId: row.id, action: "setup_owner", authMethod: "pin", detail: name });
@@ -447,19 +358,5 @@ export async function setPinHub(token: string | undefined, pin: string) {
     action: "pin_set",
     authMethod: "pin",
   });
-  if (user.telegram_id && !user.telegram_id.startsWith("dev:")) {
-    void notifyTelegram(user.telegram_id, "PIN AI Personal Hub изменён. Старые сессии закрыты.");
-  }
   return { ok: true, token: ses.token, expiresAt: ses.expiresAt, user: await publicUser(user) };
-}
-
-export async function clearPinHub(token?: string) {
-  const { user } = await requireHubUser(token);
-  if (!(await hasPasskey(user.id))) throw new Error("Сначала привяжите Face ID — PIN нельзя снять без запасного входа");
-  const sql = await getSql();
-  await sql`update hub_users set pin_salt = null, pin_hash = null where id = ${user.id}`;
-  await wipeSessions(user.id);
-  const ses = await issueSession(user.id, "webauthn");
-  await audit({ userId: user.id, telegramId: user.telegram_id, action: "pin_clear" });
-  return { ok: true, token: ses.token, expiresAt: ses.expiresAt };
 }

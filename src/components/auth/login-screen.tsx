@@ -110,7 +110,9 @@ export function LoginScreen() {
               Войти с Face ID
             </Button>
           ) : (
-            <p className="mt-8 text-center text-sm text-muted-foreground">Этот браузер без Passkey — используйте PIN.</p>
+            <p className="mt-8 text-center text-sm text-muted-foreground">
+              Этот браузер без Face ID — запасной вход по PIN.
+            </p>
           )}
           <Input
             className="mt-6"
@@ -165,7 +167,7 @@ export function LoginScreen() {
             disabled={busy || invite.length < 8 || name.trim().length < 2 || pin.length < 4}
             onClick={() => void redeem()}
           >
-            Присоединиться
+            Дальше — Face ID
           </Button>
           <button type="button" className="mt-5 text-center text-sm font-semibold text-accent" onClick={() => setMode("in")}>
             Уже есть аккаунт
@@ -173,18 +175,6 @@ export function LoginScreen() {
         </>
       )}
       {err ? <p className="mt-4 text-center text-sm text-destructive">{err}</p> : null}
-      {err ? (
-        <Button
-          className="mt-3 h-12 w-full"
-          variant="outline"
-          onClick={() => {
-            useHub.getState().setLoginError(null);
-            window.location.reload();
-          }}
-        >
-          Повторить
-        </Button>
-      ) : null}
     </div>
   );
 }

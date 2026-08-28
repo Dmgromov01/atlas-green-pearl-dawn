@@ -201,7 +201,11 @@ export async function deletePasskeyHub(token: string | undefined, credId: string
   const sql = await getSql();
   await sql`delete from hub_webauthn where id = ${credId} and user_id = ${user.id}`;
   await wipeSessions(user.id);
-  const ses = await issueSessionFor(user.id, "webauthn");
+  const remaining = await sql<{ n: number }>`
+    select count(*)::int as n from hub_webauthn where user_id = ${user.id}
+  `;
+  const hasPasskey = Number(remaining[0]?.n ?? 0) > 0;
+  const ses = await issueSessionFor(user.id, hasPasskey ? "webauthn" : "pin");
   await audit({ userId: user.id, action: "passkey_delete", authMethod: "webauthn", detail: credId.slice(0, 12) });
-  return { ok: true as const, token: ses.token, expiresAt: ses.expiresAt };
+  return { ok: true as const, token: ses.token, expiresAt: ses.expiresAt, hasPasskey };
 }

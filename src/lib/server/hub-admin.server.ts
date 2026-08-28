@@ -9,10 +9,6 @@ async function requireAdmin(token: string) {
   return user;
 }
 
-function ownerId() {
-  return (process.env.TELEGRAM_OWNER_ID || "").trim();
-}
-
 async function targetRow(userId: string) {
   const sql = await getSql();
   const rows = await sql<{
@@ -35,10 +31,6 @@ async function assertMutable(
   target: { id: string; telegram_id: string | null; role: HubRole },
   next?: { allowed?: boolean; role?: HubRole },
 ) {
-  const owner = ownerId();
-  if (owner && target.telegram_id === owner) {
-    throw new Error("Владельца нельзя менять");
-  }
   if (target.id === adminId && next?.allowed === false) {
     throw new Error("Нельзя заблокировать себя");
   }

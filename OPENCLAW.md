@@ -114,4 +114,4 @@ HUB_RESTART_CMD='systemctl restart r2d2-hub'
 
 ## Что уже в коде
 
-Погода, курсы, задачи, дайджест, переводчик, iCloud/Google, чат OpenClaw, PIN, админка, watchdog, backup-скрипт.
+Погода, задачи, дайджест, переводчик, iCloud/Google, чат OpenClaw, Face ID / PIN / инвайт, админка, watchdog, backup-скрипт.

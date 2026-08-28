@@ -27,5 +27,5 @@ npm run dev
 - Чат в приложении идёт в локальный OpenClaw: `OPENCLAW_GATEWAY_URL=http://127.0.0.1:18789` без `/v1`, модель `openclaw/default`.
 - В шлюзе должно быть `gateway.http.endpoints.chatCompletions.enabled = true`.
 - Пейджер хаба — бот `@HubAlertsbot`. Канал OpenClaw — `@Dmbotmy_bot`. Токены не смешивать.
-- Первый открывший сайт становится администратором. PIN — в Настройках.
+- Первый открывший сайт становится владельцем: Face ID — основной вход, PIN — запасной. Семья — только по одноразовому инвайту.
 - Watchdog: `scripts/hub-watchdog.sh`.

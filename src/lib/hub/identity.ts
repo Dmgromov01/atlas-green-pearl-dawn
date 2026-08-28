@@ -1,6 +1,6 @@
 export type HubRole = "admin" | "user";
 export type AiMode = "off" | "byok" | "shared";
-export type AuthMethod = "initData" | "pin" | "biometric" | "webauthn" | "invite" | "preview";
+export type AuthMethod = "pin" | "webauthn" | "invite";
 export type KeySource = "byok" | "shared" | "none";
 export type ByokProvider = "openai" | "anthropic" | "openclaw" | "custom";
 
