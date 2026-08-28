@@ -287,13 +287,18 @@ export async function setupOwnerHub(data: {
   const existing = await firstUnclaimedAdmin();
   const salt = randomBytes(16).toString("hex");
   const hash = hashPin(data.pin, salt);
+  const ownerTg = (process.env.TELEGRAM_OWNER_ID || "").trim() || null;
   let row: UserRow;
 
   if (existing) {
     await sql`
       update hub_users
       set display_name = ${name}, pin_salt = ${salt}, pin_hash = ${hash},
-          allowed = true, role = 'admin', allow_global_ai = true, ai_mode = 'shared'
+          allowed = true, role = 'admin', allow_global_ai = true, ai_mode = 'shared',
+          telegram_id = case
+            when telegram_id is null or telegram_id like 'dev:%' then ${ownerTg}
+            else telegram_id
+          end
       where id = ${existing.id}
     `;
     row = (await sql<UserRow>`select * from hub_users where id = ${existing.id} limit 1`)[0]!;
@@ -301,9 +306,9 @@ export async function setupOwnerHub(data: {
     const id = uid();
     await sql`
       insert into hub_users (
-        id, display_name, role, allowed, allow_global_ai, ai_mode, pin_salt, pin_hash
+        id, telegram_id, display_name, role, allowed, allow_global_ai, ai_mode, pin_salt, pin_hash
       ) values (
-        ${id}, ${name}, 'admin', true, true, 'shared', ${salt}, ${hash}
+        ${id}, ${ownerTg}, ${name}, 'admin', true, true, 'shared', ${salt}, ${hash}
       )
     `;
     row = (await sql<UserRow>`select * from hub_users where id = ${id} limit 1`)[0]!;
