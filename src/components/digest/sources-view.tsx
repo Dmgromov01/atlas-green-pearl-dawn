@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Rss, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSources } from "@/lib/stores/sources";
+import { useHub } from "@/lib/stores/hub";
+import { digestSyncSources } from "@/lib/server/digest-snapshot";
 import { AppShell } from "@/components/shell/app-shell";
 import { Header } from "@/components/shell/header";
 import { Page } from "@/components/shell/page";
@@ -15,9 +17,26 @@ import type { DigestSourceType } from "@/lib/hub/types";
 
 export function SourcesView() {
   const { sources, add, remove, toggle } = useSources();
+  const token = useHub((s) => s.token);
   const [type, setType] = useState<DigestSourceType>("rss");
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
+
+  useEffect(() => {
+    if (!token) return;
+    void digestSyncSources({
+      data: {
+        token,
+        sources: sources.map((s) => ({
+          id: s.id,
+          title: s.title,
+          name: s.name,
+          type: s.type,
+          enabled: s.enabled,
+        })),
+      },
+    }).catch(() => {});
+  }, [sources, token]);
 
   const submit = () => {
     const err = add({ type, name, title: title || name });

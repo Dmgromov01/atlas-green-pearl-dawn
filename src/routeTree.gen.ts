@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as CalendarRouteImport } from './routes/calendar'
@@ -19,11 +20,17 @@ import { Route as FunRouteImport } from './routes/fun'
 import { Route as RatesRouteImport } from './routes/rates'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SourcesRouteImport } from './routes/sources'
+import { Route as StatusRouteImport } from './routes/status'
 import { Route as TranslateRouteImport } from './routes/translate'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -71,6 +78,11 @@ const SourcesRoute = SourcesRouteImport.update({
   path: '/sources',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StatusRoute = StatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TranslateRoute = TranslateRouteImport.update({
   id: '/translate',
   path: '/translate',
@@ -79,6 +91,7 @@ const TranslateRoute = TranslateRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/admin': typeof AdminRoute
   '/archive': typeof ArchiveRoute
   '/calendar': typeof CalendarRoute
@@ -88,10 +101,12 @@ export interface FileRoutesByFullPath {
   '/rates': typeof RatesRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
+  '/status': typeof StatusRoute
   '/translate': typeof TranslateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/admin': typeof AdminRoute
   '/archive': typeof ArchiveRoute
   '/calendar': typeof CalendarRoute
@@ -101,11 +116,13 @@ export interface FileRoutesByTo {
   '/rates': typeof RatesRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
+  '/status': typeof StatusRoute
   '/translate': typeof TranslateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/admin': typeof AdminRoute
   '/archive': typeof ArchiveRoute
   '/calendar': typeof CalendarRoute
@@ -115,12 +132,14 @@ export interface FileRoutesById {
   '/rates': typeof RatesRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
+  '/status': typeof StatusRoute
   '/translate': typeof TranslateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activity'
     | '/admin'
     | '/archive'
     | '/calendar'
@@ -130,10 +149,12 @@ export interface FileRouteTypes {
     | '/rates'
     | '/settings'
     | '/sources'
+    | '/status'
     | '/translate'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activity'
     | '/admin'
     | '/archive'
     | '/calendar'
@@ -143,10 +164,12 @@ export interface FileRouteTypes {
     | '/rates'
     | '/settings'
     | '/sources'
+    | '/status'
     | '/translate'
   id:
     | '__root__'
     | '/'
+    | '/activity'
     | '/admin'
     | '/archive'
     | '/calendar'
@@ -156,11 +179,13 @@ export interface FileRouteTypes {
     | '/rates'
     | '/settings'
     | '/sources'
+    | '/status'
     | '/translate'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivityRoute: typeof ActivityRoute
   AdminRoute: typeof AdminRoute
   ArchiveRoute: typeof ArchiveRoute
   CalendarRoute: typeof CalendarRoute
@@ -170,6 +195,7 @@ export interface RootRouteChildren {
   RatesRoute: typeof RatesRoute
   SettingsRoute: typeof SettingsRoute
   SourcesRoute: typeof SourcesRoute
+  StatusRoute: typeof StatusRoute
   TranslateRoute: typeof TranslateRoute
 }
 
@@ -180,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -245,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/status': {
+      id: '/status'
+      path: '/status'
+      fullPath: '/status'
+      preLoaderRoute: typeof StatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/translate': {
       id: '/translate'
       path: '/translate'
@@ -257,6 +297,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivityRoute: ActivityRoute,
   AdminRoute: AdminRoute,
   ArchiveRoute: ArchiveRoute,
   CalendarRoute: CalendarRoute,
@@ -266,6 +307,7 @@ const rootRouteChildren: RootRouteChildren = {
   RatesRoute: RatesRoute,
   SettingsRoute: SettingsRoute,
   SourcesRoute: SourcesRoute,
+  StatusRoute: StatusRoute,
   TranslateRoute: TranslateRoute,
 }
 export const routeTree = rootRouteImport

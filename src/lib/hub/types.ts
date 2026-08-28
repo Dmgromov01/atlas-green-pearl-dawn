@@ -3,16 +3,14 @@ import type { LucideIcon } from "lucide-react";
 export type HubModuleId =
   | "home"
   | "digest"
-  | "fun"
   | "translate"
   | "tasks"
   | "calendar"
-  | "rates"
-  | "passwords"
   | "settings"
   | "admin"
   | "chat"
-  | "inbox";
+  | "inbox"
+  | "status";
 
 export type HubModule = {
   id: HubModuleId;
