@@ -45,11 +45,15 @@ function pinOk(pin: string, salt: string | null, hash: string | null) {
 }
 
 async function hasPasskey(userId: string) {
-  const sql = await getSql();
-  const rows = await sql<{ n: number }>`
-    select count(*)::int as n from hub_webauthn where user_id = ${userId}
-  `;
-  return Number(rows[0]?.n ?? 0) > 0;
+  try {
+    const sql = await getSql();
+    const rows = await sql<{ n: number }>`
+      select count(*)::int as n from hub_webauthn where user_id = ${userId}
+    `;
+    return Number(rows[0]?.n ?? 0) > 0;
+  } catch {
+    return false;
+  }
 }
 
 async function publicUser(row: UserRow): Promise<HubUserPublic> {
@@ -147,13 +151,17 @@ async function countAdminsReady() {
     where role = 'admin' and allowed = true and pin_hash is not null
   `;
   const pinReady = Number(rows[0]?.n ?? 0);
-  const pass = await sql<{ n: number }>`
-    select count(*)::int as n
-    from hub_webauthn w
-    join hub_users u on u.id = w.user_id
-    where u.role = 'admin' and u.allowed = true
-  `;
-  return pinReady + Number(pass[0]?.n ?? 0);
+  try {
+    const pass = await sql<{ n: number }>`
+      select count(*)::int as n
+      from hub_webauthn w
+      join hub_users u on u.id = w.user_id
+      where u.role = 'admin' and u.allowed = true
+    `;
+    return pinReady + Number(pass[0]?.n ?? 0);
+  } catch {
+    return pinReady;
+  }
 }
 
 async function firstUnclaimedAdmin() {

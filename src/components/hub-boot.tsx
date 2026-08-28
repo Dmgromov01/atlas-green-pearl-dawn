@@ -4,6 +4,14 @@ import { restoreHubSession, useHub } from "@/lib/stores/hub";
 import { useSettings } from "@/lib/stores/settings";
 import { HubRuntime } from "@/components/hub-runtime";
 
+function bootError(err: unknown) {
+  const raw = err instanceof Error ? err.message : "Нет связи с хабом";
+  if (/Aborted/i.test(raw)) {
+    return "База хаба не поднялась после обновления. Обнови страницу через минуту.";
+  }
+  return raw;
+}
+
 export function HubBoot() {
   const setSession = useHub((s) => s.setSession);
   const setReady = useHub((s) => s.setReady);
@@ -30,7 +38,7 @@ export function HubBoot() {
         }
       } catch (err) {
         if (!cancelled) {
-          setLoginError(err instanceof Error ? err.message : "Нет связи с хабом");
+          setLoginError(bootError(err));
           setReady(true, false);
         }
       }
