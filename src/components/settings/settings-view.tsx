@@ -2,19 +2,18 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Shield, Newspaper, RefreshCw } from "lucide-react";
+import { HeartPulse, Newspaper, RefreshCw, Shield } from "lucide-react";
 import { searchCities } from "@/lib/server/weather";
 import { fetchIcsFeed } from "@/lib/server/ics";
-import { hashPin, useSettings } from "@/lib/stores/settings";
+import { useSettings } from "@/lib/stores/settings";
 import { useTasks } from "@/lib/stores/tasks";
 import { useCalendar } from "@/lib/stores/calendar";
 import { useDictionary } from "@/lib/stores/dictionary";
 import { useSources } from "@/lib/stores/sources";
 import { useInbox } from "@/lib/stores/inbox";
 import { useChat } from "@/lib/stores/chat";
-import { lockSession, unlockSession } from "@/lib/pin-session";
 import { useHub } from "@/lib/stores/hub";
-import { hubClearPin, hubLogout, hubSetPin } from "@/lib/server/hub-auth";
+import { hubLogout } from "@/lib/server/hub-auth";
 import { AppShell } from "@/components/shell/app-shell";
 import { Header } from "@/components/shell/header";
 import { Page, SectionLabel } from "@/components/shell/page";
@@ -27,6 +26,7 @@ import { AiAccessCard } from "@/components/settings/ai-access";
 import { GcalCard } from "@/components/settings/gcal-card";
 import { IcloudCard } from "@/components/settings/icloud-card";
 import { FamilyCard } from "@/components/settings/family-card";
+import { PasskeysCard } from "@/components/settings/passkeys-card";
 import { HomeScreenCard } from "@/components/settings/home-screen-card";
 import { haptic } from "@/lib/haptic";
 import { HUB_MODULES } from "@/lib/hub/registry";
@@ -42,11 +42,10 @@ export function SettingsView() {
   const s = useSettings();
   const hub = useHub();
   const live = useLive();
-  const [name, setName] = useState(s.displayName);
+  const [name, setName] = useState(hub.user?.displayName || s.displayName);
   const [q, setQ] = useState(s.city?.name ?? "");
-  const [pin, setPin] = useState("");
   const search = useMutation({
-    mutationFn: (query: string) => searchCities({ data: { q } }),
+    mutationFn: (query: string) => searchCities({ data: { q: query } }),
   });
   const ics = useQuery({
     queryKey: ["ics", s.icsUrl],
@@ -58,7 +57,7 @@ export function SettingsView() {
   const saveName = () => {
     s.setDisplayName(name.trim().slice(0, 40) || "Гость");
     haptic("success");
-    toast("Имя сохранено");
+    toast("Имя на этом устройстве сохранено");
   };
 
   const setTheme = (theme: "light" | "dark" | "system") => {
@@ -78,22 +77,21 @@ export function SettingsView() {
   const enabled = (id: HubModuleId) => s.enabledModules === "all" || s.enabledModules.includes(id);
 
   const signOut = async () => {
-    if (hub.token) await hubLogout({ data: { token: hub.token } }).catch(() => {});
+    await hubLogout({ data: { token: hub.token } }).catch(() => {});
     hub.clear();
     haptic();
     toast("Сессия закрыта");
   };
 
   const wipe = async () => {
-    if (!window.confirm("Сбросить имя, PIN, задачи, календарь и словарь на этом устройстве?")) return;
-    if (hub.token) await hubLogout({ data: { token: hub.token } }).catch(() => {});
+    if (!window.confirm("Сбросить имя, задачи, календарь и словарь на этом устройстве?")) return;
+    await hubLogout({ data: { token: hub.token } }).catch(() => {});
     useTasks.getState().reset();
     useCalendar.getState().reset();
     useDictionary.getState().reset();
     useSources.getState().reset();
     useInbox.getState().reset();
     useChat.getState().reset();
-    lockSession();
     hub.clear();
     s.resetAll();
     haptic("heavy");
@@ -109,7 +107,7 @@ export function SettingsView() {
             <ServiceRow
               icon={<Shield className="size-4" />}
               title="Админ-панель"
-              status="Пользователи, общий AI, аудит"
+              status="Семья, инвайты, аудит"
               onClick={() => {
                 haptic();
                 navigate({ to: "/admin" });
@@ -118,6 +116,18 @@ export function SettingsView() {
           </Card>
         ) : null}
 
+        <Card>
+          <ServiceRow
+            icon={<HeartPulse className="size-4" />}
+            title="Состояние системы"
+            status="Календари, шлюз, лента агента"
+            onClick={() => {
+              haptic();
+              navigate({ to: "/status" });
+            }}
+          />
+        </Card>
+
         <Card className="space-y-3 p-4">
           <SectionLabel>Профиль</SectionLabel>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Имя" />
@@ -125,6 +135,8 @@ export function SettingsView() {
             Сохранить имя
           </Button>
         </Card>
+
+        <PasskeysCard />
 
         <AiAccessCard />
 
@@ -171,9 +183,9 @@ export function SettingsView() {
         </Card>
 
         <Card className="space-y-3 p-4">
-          <SectionLabel>Напоминания</SectionLabel>
+          <SectionLabel>Утро / вечер в Telegram</SectionLabel>
           <p className="text-sm text-muted-foreground">
-            Утром, за 15 минут до события и вечером — пока хаб открыт.
+            Сводка, пока хаб открыт. Точечные напоминания — отдельной карточкой на главной.
           </p>
           {(
             [
@@ -191,7 +203,6 @@ export function SettingsView() {
             </div>
           ))}
         </Card>
-
 
         <Card className="space-y-3 p-4">
           <SectionLabel>Тема</SectionLabel>
@@ -252,69 +263,9 @@ export function SettingsView() {
           ))}
         </Card>
 
-        <Card className="space-y-3 p-4">
-          <SectionLabel>PIN</SectionLabel>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            4–8 цифр. Запасной вход на этом устройстве.
-          </p>
-          <Input
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
-            placeholder="4–8 цифр"
-          />
-          <div className="flex gap-2">
-            <Button
-              className="flex-1"
-              disabled={pin.length < 4}
-              onClick={async () => {
-                const { salt, hash } = await hashPin(pin);
-                s.setPin(salt, hash);
-                unlockSession();
-                if (hub.token) {
-                  try {
-                    await hubSetPin({ data: { token: hub.token, pin } });
-                  } catch (e) {
-                    toast.error(e instanceof Error ? e.message : "PIN на сервер не ушёл");
-                  }
-                }
-                setPin("");
-                toast("Код установлен");
-              }}
-            >
-              Установить
-            </Button>
-            {s.pinHash ? (
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  s.clearPin();
-                  if (hub.token) await hubClearPin({ data: { token: hub.token } }).catch(() => {});
-                  toast("Код снят");
-                }}
-              >
-                Снять
-              </Button>
-            ) : null}
-          </div>
-          {s.pinHash ? (
-            <Button
-              variant="secondary"
-              onClick={() => {
-                lockSession();
-                window.location.reload();
-              }}
-            >
-              Заблокировать сейчас
-            </Button>
-          ) : null}
-        </Card>
-
         <Card className="space-y-1 p-4">
           <SectionLabel className="mb-2">Модули</SectionLabel>
-          {HUB_MODULES.filter((m) => !["home", "settings", "admin", "chat"].includes(m.id)).map((m) => (
+          {HUB_MODULES.filter((m) => !["home", "settings", "admin", "chat", "status"].includes(m.id)).map((m) => (
             <div key={m.id} className="flex min-h-11 items-center justify-between gap-3 py-2">
               <div>
                 <div className="text-sm font-semibold">{m.title}</div>
@@ -341,10 +292,10 @@ export function SettingsView() {
             />
             <p className="text-sm leading-relaxed text-muted-foreground">
               {live.status === "on"
-                ? "Онлайн — погода, курсы, календарь и семья обновляются сразу."
+                ? "Онлайн — погода, календарь и семья обновляются сразу."
                 : live.status === "retry"
                   ? "Переподключаюсь. Пока обновляю по таймеру."
-                  : "Задачи и Inbox на устройстве. Сессия — на сервере."}
+                  : "Задачи и Inbox на устройстве. Сессия — в httpOnly-куке."}
             </p>
           </div>
           <Button
@@ -353,10 +304,9 @@ export function SettingsView() {
             onClick={async () => {
               haptic();
               try {
-                await refreshHubData({ data: { tags: ["weather", "rates", "digest", "ics"] } });
+                await refreshHubData({ data: { tags: ["weather", "digest", "ics"] } });
                 await Promise.all([
                   queryClient.invalidateQueries({ queryKey: ["weather"] }),
-                  queryClient.invalidateQueries({ queryKey: ["rates"] }),
                   queryClient.invalidateQueries({ queryKey: ["digest"] }),
                   queryClient.invalidateQueries({ queryKey: ["brief"] }),
                   queryClient.invalidateQueries({ queryKey: ["ics"] }),

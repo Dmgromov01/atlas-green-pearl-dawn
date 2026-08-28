@@ -68,6 +68,9 @@ export function AdminView() {
                 <div className="flex items-center gap-1.5 text-sm font-semibold">
                   {u.display_name || u.username || "Без имени"}
                   {u.role === "admin" ? <Shield className="size-3.5 text-accent" /> : null}
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {u.role === "admin" ? "владелец" : "семья"}
+                  </span>
                 </div>
                 <div className="truncate text-[11px] text-muted-foreground">
                   {u.telegram_id?.startsWith("dev:")

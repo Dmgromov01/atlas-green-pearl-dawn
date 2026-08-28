@@ -1,50 +1,46 @@
 import { useEffect } from "react";
-import { hubLogin, hubMe } from "@/lib/server/hub-auth";
-import { deviceId, readHubToken, restoreHubSession, useHub } from "@/lib/stores/hub";
+import { hubMe, hubStatus } from "@/lib/server/hub-auth";
+import { restoreHubSession, useHub } from "@/lib/stores/hub";
 import { useSettings } from "@/lib/stores/settings";
 import { HubRuntime } from "@/components/hub-runtime";
 
 export function HubBoot() {
   const setSession = useHub((s) => s.setSession);
+  const setReady = useHub((s) => s.setReady);
   const setLoginError = useHub((s) => s.setLoginError);
-  const name = useSettings((s) => s.displayName);
+  const clear = useHub((s) => s.clear);
 
   useEffect(() => {
     restoreHubSession();
     let cancelled = false;
     const run = async () => {
-      const existing = readHubToken();
-      if (existing) {
+      try {
+        const status = await hubStatus();
+        if (cancelled) return;
         try {
-          const me = await hubMe({ data: { token: existing } });
-          if (!cancelled) setSession(existing, me);
+          const me = await hubMe({ data: {} });
+          if (cancelled) return;
+          setSession("cookie", me);
+          if (me.displayName) useSettings.getState().completeOnboarding(me.displayName);
           return;
         } catch {
-          if (!cancelled) useHub.getState().clear();
+          if (cancelled) return;
+          clear();
+          setReady(true, status.needsSetup);
         }
-      }
-      try {
-        const res = await hubLogin({
-          data: {
-            deviceId: deviceId(),
-            displayName: useSettings.getState().displayName,
-          },
-        });
-        if (cancelled) return;
-        if ("token" in res) setSession(res.token, res.user);
-        else setLoginError(res.error);
       } catch (err) {
         if (!cancelled) {
-          setLoginError(err instanceof Error ? err.message : "Не удалось войти");
+          setLoginError(err instanceof Error ? err.message : "Нет связи с хабом");
+          setReady(true, false);
         }
       }
     };
-    const idle = window.setTimeout(() => void run(), 80);
+    const idle = window.setTimeout(() => void run(), 40);
     return () => {
       cancelled = true;
       window.clearTimeout(idle);
     };
-  }, [name, setSession, setLoginError]);
+  }, [setSession, setReady, setLoginError, clear]);
 
   return <HubRuntime />;
 }

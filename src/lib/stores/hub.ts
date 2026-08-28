@@ -3,21 +3,10 @@ import type { HubUserPublic } from "@/lib/hub/identity";
 
 const TOKEN = "r2d2.hub.token";
 const USER = "r2d2.hub.user";
-const DEVICE = "r2d2.device";
-
-export function deviceId() {
-  if (typeof window === "undefined") return "ssr";
-  let id = localStorage.getItem(DEVICE);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(DEVICE, id);
-  }
-  return id;
-}
 
 export function readHubToken() {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem(TOKEN) || sessionStorage.getItem(TOKEN) || "";
+  return "";
 }
 
 function readHubUser(): HubUserPublic | null {
@@ -30,47 +19,65 @@ function readHubUser(): HubUserPublic | null {
   }
 }
 
+function dropLegacyToken() {
+  try {
+    localStorage.removeItem(TOKEN);
+    sessionStorage.removeItem(TOKEN);
+  } catch {
+    /* ignore */
+  }
+}
+
 type HubState = {
+  ready: boolean;
+  needsSetup: boolean;
   token: string;
   user: HubUserPublic | null;
   loginError: string | null;
+  setReady: (ready: boolean, needsSetup?: boolean) => void;
   setSession: (token: string, user: HubUserPublic) => void;
   setLoginError: (error: string | null) => void;
   clear: () => void;
 };
 
 export const useHub = create<HubState>()((set) => ({
+  ready: false,
+  needsSetup: false,
   token: "",
   user: null,
   loginError: null,
+  setReady: (ready, needsSetup) =>
+    set((s) => ({ ready, needsSetup: needsSetup ?? s.needsSetup })),
   setSession: (token, user) => {
+    dropLegacyToken();
     try {
-      localStorage.setItem(TOKEN, token);
       localStorage.setItem(USER, JSON.stringify(user));
-      sessionStorage.setItem(TOKEN, token);
     } catch {
       /* private mode */
     }
-    set({ token, user, loginError: null });
+    set({
+      token: token || "cookie",
+      user,
+      loginError: null,
+      ready: true,
+      needsSetup: false,
+    });
   },
   setLoginError: (loginError) => set({ loginError }),
   clear: () => {
+    dropLegacyToken();
     try {
-      localStorage.removeItem(TOKEN);
       localStorage.removeItem(USER);
-      sessionStorage.removeItem(TOKEN);
     } catch {
       /* ignore */
     }
-    set({ token: "", user: null, loginError: null });
+    set({ token: "", user: null, loginError: null, ready: true });
   },
 }));
 
 export function restoreHubSession() {
-  const token = readHubToken();
+  dropLegacyToken();
   const user = readHubUser();
-  if (!token) return "";
-  if (user) useHub.getState().setSession(token, user);
-  else useHub.setState({ token });
-  return token;
+  if (user) useHub.setState({ user });
+  return "";
 }

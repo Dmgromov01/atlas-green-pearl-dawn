@@ -1,79 +1,90 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { gcalStatus } from "@/lib/server/gcal";
 import { icloudStatus } from "@/lib/server/icloud";
+import { hubCreateInvite, hubListInvites } from "@/lib/server/hub-auth";
 import { useHub } from "@/lib/stores/hub";
 import { useSettings } from "@/lib/stores/settings";
+import { roleLabel } from "@/lib/hub/identity";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { SectionLabel } from "@/components/shell/page";
 import { haptic } from "@/lib/haptic";
 
 export function FamilyCard() {
   const token = useHub((s) => s.token);
+  const me = useHub((s) => s.user);
   const familyShare = useSettings((s) => s.familyShare);
   const setFamilyShare = useSettings((s) => s.setFamilyShare);
-  const icloudCal = useSettings((s) => s.icloudCal);
-  const setIcloudCal = useSettings((s) => s.setIcloudCal);
+  const qc = useQueryClient();
 
-  const status = useQuery({
+  const gcal = useQuery({
+    queryKey: ["gcal", token],
+    queryFn: () => gcalStatus({ data: { token } }),
+    enabled: Boolean(token),
+    staleTime: 30_000,
+  });
+  const icloud = useQuery({
     queryKey: ["icloud", token],
     queryFn: () => icloudStatus({ data: { token } }),
     enabled: Boolean(token),
     staleTime: 30_000,
   });
+  const invites = useQuery({
+    queryKey: ["invites"],
+    queryFn: () => hubListInvites({ data: { token } }),
+    enabled: Boolean(token && me?.role === "admin"),
+  });
 
-  const familyCal = status.data?.connected
-    ? status.data.calendars.find((c) => c.href === status.data.familyHref) ||
-      status.data.calendars.find((c) => c.family)
-    : null;
+  const invite = useMutation({
+    mutationFn: () => hubCreateInvite({ data: { token } }),
+    onSuccess: async (res) => {
+      haptic("success");
+      try {
+        await navigator.clipboard.writeText(res.url);
+        toast("Ссылка скопирована. Действует 7 дней.");
+      } catch {
+        toast(res.url);
+      }
+      void qc.invalidateQueries({ queryKey: ["invites"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
     <Card className="space-y-3 p-4">
-      <SectionLabel>Семейный доступ</SectionLabel>
+      <SectionLabel>Семья</SectionLabel>
       <p className="text-sm leading-snug text-muted-foreground">
-        Встречи с хаба пишутся в iCloud «Семья» — у всех iPhone семьи они появляются сами.
-        Состав семьи меняется на iPhone: Настройки → Семья.
+        Вы {me ? roleLabel(me.role) : "гость"}. Общего пароля нет — только личный Face ID / PIN и одноразовый инвайт.
       </p>
       <div className="rounded-2xl bg-muted px-3 py-2 text-sm">
-        {status.isFetching && !status.data ? (
-          <span className="text-muted-foreground">Проверяю iCloud…</span>
-        ) : familyCal ? (
-          <span className="font-semibold text-accent">iCloud «{familyCal.name}» · подключена</span>
-        ) : status.data?.connected ? (
-          <span className="text-muted-foreground">iCloud есть, календарь «Семья» не выбран</span>
+        {gcal.data?.connected ? (
+          <span className="font-semibold text-accent">
+            Google Calendar · {gcal.data.familyId ? "семейный календарь выбран" : "подключен, семейный не выбран"}
+          </span>
         ) : (
-          <span className="text-muted-foreground">iCloud ещё не подключен</span>
+          <span className="text-muted-foreground">Семейный календарь — Google. Сейчас не подключен.</span>
         )}
       </div>
-      <div>
-        <div className="mb-1.5 text-xs font-bold text-muted-foreground">Куда писать встречи</div>
-        <div className="seg">
-          <button
-            type="button"
-            className={`seg__btn ${icloudCal !== "split" ? "is-on" : ""}`}
-            onClick={() => {
-              setIcloudCal("family");
-              haptic();
-            }}
-          >
-            Все в «Семья»
-          </button>
-          <button
-            type="button"
-            className={`seg__btn ${icloudCal === "split" ? "is-on" : ""}`}
-            onClick={() => {
-              setIcloudCal("split");
-              haptic();
-            }}
-          >
-            Home / Семья
-          </button>
+      <p className="text-xs leading-snug text-muted-foreground">
+        {icloud.data?.connected
+          ? "iCloud подключён как личный CalDAV этого Apple ID. Это не «Семья» на iPhone."
+          : "iCloud не обязателен. Семейные встречи идут в Google Calendar."}
+      </p>
+      {me?.role === "admin" ? (
+        <div className="space-y-2">
+          <Button className="w-full" variant="secondary" onClick={() => void invite.mutate()}>
+            Пригласить в семью
+          </Button>
+          {(invites.data ?? []).slice(0, 5).map((inv) => (
+            <div key={inv.id} className="text-xs text-muted-foreground">
+              {inv.used_at ? "использован" : "ждёт"} · до {inv.expires_at.slice(0, 10)}
+              {inv.display_name ? ` · ${inv.display_name}` : ""}
+            </div>
+          ))}
         </div>
-        <p className="mt-1.5 text-xs leading-snug text-muted-foreground">
-          {icloudCal === "split"
-            ? "Личные — в Home. Иконка семьи — в календарь «Семья»."
-            : "Каждая встреча из хаба сразу в семейный календарь iPhone."}
-        </p>
-      </div>
+      ) : null}
       <div className="flex min-h-11 items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold">Общие задачи и Inbox в хабе</div>
