@@ -151,10 +151,14 @@ async function createPgliteSql(): Promise<Sql> {
     for (const { name, path } of pendingMigrations(Object.keys(migrations), done)) {
       // Apply + record atomically (parity with scripts/migrate.mjs) so a failed
       // statement can't leave a file half-applied but untracked.
-      await pg.transaction(async (tx) => {
-        await tx.exec(migrations[path]);
-        await tx.query("insert into _migrations (name) values ($1)", [name]);
-      });
+      try {
+        await pg.transaction(async (tx) => {
+          await tx.exec(migrations[path]);
+          await tx.query("insert into _migrations (name) values ($1)", [name]);
+        });
+      } catch (err) {
+        console.error(`[db] migration ${name} failed — continuing with existing schema`, err);
+      }
     }
   };
   const pass = (globalRef.__pgliteMigrateChain__ ?? Promise.resolve())

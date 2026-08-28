@@ -6,6 +6,7 @@ import type { AiMode, AuthMethod, HubRole, HubUserPublic, KeySource } from "@/li
 import { SESSION_TTL_SEC } from "@/lib/hub/identity";
 import { rateLimit } from "./limit";
 import { bearerOrCookie, clearSessionCookie, writeSessionCookie } from "./hub-session.server";
+import { ensureHubSchema } from "./hub-schema.server";
 
 type UserRow = {
   id: string;
@@ -176,6 +177,7 @@ async function firstUnclaimedAdmin() {
 }
 
 export async function hubAuthStatus() {
+  await ensureHubSchema();
   const ready = await countAdminsReady();
   return { needsSetup: ready === 0 };
 }

@@ -173,6 +173,18 @@ export function LoginScreen() {
         </>
       )}
       {err ? <p className="mt-4 text-center text-sm text-destructive">{err}</p> : null}
+      {err ? (
+        <Button
+          className="mt-3 h-12 w-full"
+          variant="outline"
+          onClick={() => {
+            useHub.getState().setLoginError(null);
+            window.location.reload();
+          }}
+        >
+          Повторить
+        </Button>
+      ) : null}
     </div>
   );
 }

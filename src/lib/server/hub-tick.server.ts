@@ -1,7 +1,9 @@
 import { fireDueReminders } from "./reminders.server";
 import { refreshDigestSnapshot } from "./digest-snapshot.server";
+import { ensureHubSchema } from "./hub-schema.server";
 
 export async function runHubTick() {
+  await ensureHubSchema().catch((err) => console.error("[tick] schema", err));
   const reminders = await fireDueReminders().catch((err) => {
     console.error("[tick] reminders", err);
     return { sent: 0, error: String(err) };
