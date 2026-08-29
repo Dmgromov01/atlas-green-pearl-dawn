@@ -1,7 +1,6 @@
 import { cached, fetchJson } from "./cache.ts";
+import { airLabel, normalizeExternalQuery } from "./free-apis-pure.ts";
 
-const MAX_QUERY = 120;
-const trimQuery = (value: unknown) => String(value || "").trim().slice(0, MAX_QUERY);
 
 export type AirQuality = {
   aqi: number | null;
@@ -12,10 +11,8 @@ export type AirQuality = {
 };
 
 type AirResponse = { current?: { european_aqi?: number; pm2_5?: number; pm10?: number; time?: string } };
-function airLabel(aqi: number | null): AirQuality["label"] {
-  if (aqi === null) return "нет данных";
-  return aqi <= 20 ? "хороший" : aqi <= 40 ? "умеренный" : "плохой";
-}
+
+
 export async function loadAirQuality(data: { lat: number; lon: number }): Promise<AirQuality> {
   const lat = Number(data.lat), lon = Number(data.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) throw new Error("Invalid coordinates");
@@ -41,7 +38,7 @@ export async function loadNextHoliday(data: { countryCode?: string; year?: numbe
 export type CitySearchResult = { name: string; lat: number; lon: number; country?: string; state?: string };
 type NominatimItem = { display_name?: string; lat?: string; lon?: string; address?: { city?: string; town?: string; village?: string; country?: string; state?: string } };
 export async function loadCitiesNominatim(data: { q: string }): Promise<CitySearchResult[]> {
-  const q = trimQuery(data.q);
+  const q = normalizeExternalQuery(data.q);
   if (q.length < 2) return [];
   const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=ru&q=${encodeURIComponent(q)}`;
   const raw = await cached(`nominatim:${q.toLowerCase()}`, 86_400_000, () => fetchJson<NominatimItem[]>(url, 7000));
@@ -55,7 +52,7 @@ export async function loadCitiesNominatim(data: { q: string }): Promise<CitySear
 export type WikipediaSummary = { title: string; extract: string; url: string; thumbnail?: string };
 type WikiItem = { title?: string; extract?: string; content_urls?: { desktop?: { page?: string } }; thumbnail?: { source?: string } };
 export async function loadWikipediaSummary(data: { title: string }): Promise<WikipediaSummary | null> {
-  const title = trimQuery(data.title);
+  const title = normalizeExternalQuery(data.title);
   if (title.length < 2) return null;
   const encoded = encodeURIComponent(title.replace(/\s+/g, "_"));
   const raw = await cached(`wikipedia:${title.toLowerCase()}`, 86_400_000, () => fetchJson<WikiItem>(`https://ru.wikipedia.org/api/rest_v1/page/summary/${encoded}`, 7000));

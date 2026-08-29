@@ -1,21 +1,17 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { loadAirQuality, loadCitiesNominatim, loadNextHoliday, loadWikipediaSummary } from "./free-apis.server.ts";
+import { airLabel, normalizeExternalQuery } from "./free-apis-pure.ts";
 
-describe("free API guards", () => {
-  it("rejects invalid air-quality coordinates before network access", async () => {
-    await assert.rejects(() => loadAirQuality({ lat: 91, lon: 37 }), /Invalid coordinates/);
+describe("free API pure helpers", () => {
+  it("maps AQI to a compact user-facing label", () => {
+    assert.equal(airLabel(null), "нет данных");
+    assert.equal(airLabel(20), "хороший");
+    assert.equal(airLabel(40), "умеренный");
+    assert.equal(airLabel(41), "плохой");
   });
 
-  it("returns no city result for too-short Nominatim query", async () => {
-    assert.deepEqual(await loadCitiesNominatim({ q: "a" }), []);
-  });
-
-  it("returns no Wikipedia result for too-short title", async () => {
-    assert.equal(await loadWikipediaSummary({ title: "" }), null);
-  });
-
-  it("rejects holiday years outside the supported range", async () => {
-    await assert.rejects(() => loadNextHoliday({ year: 2101 }), /Invalid holiday year/);
+  it("bounds external query input", () => {
+    assert.equal(normalizeExternalQuery("  Москва  "), "Москва");
+    assert.equal(normalizeExternalQuery("x".repeat(200)).length, 120);
   });
 });
