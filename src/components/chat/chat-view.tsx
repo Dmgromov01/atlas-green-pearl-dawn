@@ -15,9 +15,11 @@ import { AppShell } from "@/components/shell/app-shell";
 import { Header } from "@/components/shell/header";
 import { Page } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
-import { startDictation } from "@/lib/voice";
 import { haptic } from "@/lib/haptic";
 import { cn, formatDue, formatTime, localDateKey } from "@/lib/utils";
+import { startDictation } from "@/lib/voice";
+import { MessageContent } from "./message-content";
+
 
 function dayContext() {
   const settings = useSettings.getState();
@@ -51,8 +53,13 @@ function dayContext() {
     .join("\n");
 }
 
+function needsDayContext(payload: string) {
+  return /сегодня|завтра|задач|событ|календар|напомин|inbox|план|расписан|погод|курсов|город/i.test(payload);
+}
+
 export function ChatView() {
   const navigate = useNavigate();
+
   const search = useSearch({ from: "/chat" });
   const token = useHub((s) => s.token);
   const user = useHub((s) => s.user);
@@ -75,11 +82,17 @@ export function ChatView() {
       if (!token) throw new Error("Нет сессии. Откройте хаб заново.");
       if (user?.aiMode === "off") throw new Error("Агент выключен. Включите AI в Настройках.");
       push("user", payload);
-      const history = [...useChat.getState().messages].map((m) => ({
+      const history = [...useChat.getState().messages].slice(-8).map((m) => ({
         role: m.role,
         text: m.text,
       }));
-      return hubAiChat({ data: { token, messages: history, context: dayContext() } });
+      return hubAiChat({
+        data: {
+          token,
+          messages: history,
+          ...(needsDayContext(payload) ? { context: dayContext() } : {}),
+        },
+      });
     },
     onSuccess: async (res) => {
       const { text: reply, actions, fenced } = splitHubReply(res.text || "");
@@ -102,7 +115,7 @@ export function ChatView() {
   });
 
   const submit = (raw?: string) => {
-    const payload = (raw ?? text).trim();
+    const payload = (raw ?? text).trim().slice(0, 2000);
     if (!payload || send.isPending || user?.aiMode === "off") return;
     setText("");
     haptic("medium");
@@ -190,7 +203,7 @@ export function ChatView() {
                     m.role === "user" ? "ml-auto bg-foreground text-background" : "bg-card text-foreground",
                   )}
                 >
-                  {m.text}
+                    <MessageContent text={m.text} />
                 </div>
               ))
             )}
@@ -199,9 +212,11 @@ export function ChatView() {
             ) : null}
             <div ref={endRef} />
           </div>
-          <div className="sticky bottom-2 mt-3 flex items-center gap-1.5">
-            <input
+          <div className="chat-composer">
+            <textarea
               value={text}
+              maxLength={2000}
+              rows={1}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -211,7 +226,7 @@ export function ChatView() {
               }}
               placeholder={aiOff ? "Сначала включите AI в Настройках" : "Сообщение агенту…"}
               disabled={aiOff || send.isPending}
-              className="flex h-11 min-w-0 flex-1 rounded-full border border-border bg-card px-4 text-sm outline-none disabled:opacity-60"
+              className="chat-composer__input"
             />
             <Button
               variant="secondary"
