@@ -1,5 +1,5 @@
 import { cached, fetchJson } from "./cache.ts";
-import { airLabel, normalizeExternalQuery } from "./free-apis-pure.ts";
+import { airLabel, normalizeCountryCode, normalizeExternalQuery } from "./free-apis-pure.ts";
 
 
 export type AirQuality = {
@@ -27,7 +27,7 @@ export async function loadAirQuality(data: { lat: number; lon: number }): Promis
 
 export type Holiday = { date: string; localName: string; name: string; global: boolean };
 export async function loadNextHoliday(data: { countryCode?: string; year?: number }): Promise<Holiday | null> {
-  const country = (String(data.countryCode || "RU").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2) || "RU");
+  const country = normalizeCountryCode(data.countryCode);
   const year = Number(data.year) || new Date().getUTCFullYear();
   if (year < 2020 || year > 2100) throw new Error("Invalid holiday year");
   const holidays = await cached(`holidays:${country}:${year}`, 86_400_000, () => fetchJson<Holiday[]>(`https://date.nager.at/api/v3/PublicHolidays/${year}/${country}`, 6000));

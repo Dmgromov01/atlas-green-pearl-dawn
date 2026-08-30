@@ -9,7 +9,6 @@ export function TabBar() {
   const enabled = useSettings((s) => s.enabledModules);
   const tabs = tabModules(enabled);
   const home = tabs.find((t) => t.id === "home");
-  const chat = tabs.find((t) => t.id === "chat");
   const more = tabs.find((t) => t.id === "settings");
 
   const item = (tab: (typeof tabs)[number], fab = false) => {
@@ -33,8 +32,7 @@ export function TabBar() {
   return (
     <nav className="tabbar" aria-label="Основная навигация">
       <div className="tabbar__side tabbar__side--left">{home ? item(home) : null}</div>
-      <div className="tabbar__slot">{chat ? item(chat, true) : null}</div>
-      <div className="tabbar__side tabbar__side--right">{more ? item(more) : <span className="tabbar__item" aria-hidden />}</div>
+      <div className="tabbar__side tabbar__side--right">{more ? item(more) : null}</div>
     </nav>
   );
 }

@@ -1,18 +1,15 @@
-import { useNavigate } from "@tanstack/react-router";
 import { CalendarDays, Inbox, Sparkles, SquareCheckBig } from "lucide-react";
 import { useTasks } from "@/lib/stores/tasks";
 import { useCalendar } from "@/lib/stores/calendar";
 import { useInbox } from "@/lib/stores/inbox";
 import { IconWell } from "@/components/shell/icon-well";
 import { FoldCard } from "@/components/home/fold-card";
-import { haptic } from "@/lib/haptic";
 import { formatEventTime, isOverdue, localDateKey } from "@/lib/utils";
 
 const MONTHS = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 const WEEKDAYS = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
 
 export function TodayCard() {
-  const navigate = useNavigate();
   const tasks = useTasks((s) => s.tasks);
   const events = useCalendar((s) => s.events);
   const notes = useInbox((s) => s.notes);
@@ -25,11 +22,6 @@ export function TodayCard() {
     .sort((a, b) => a.start.localeCompare(b.start))[0];
   const overdue = open.filter((t) => isOverdue(t.dueAt, t.done));
   const dateLabel = `${WEEKDAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
-
-  const ask = () => {
-    haptic("medium");
-    void navigate({ to: "/chat", search: { q: "Что у меня сегодня?" } });
-  };
 
   const bits = [
     open.length ? `${open.length} задач` : "задач нет",
@@ -63,13 +55,6 @@ export function TodayCard() {
           <div className="min-w-0 text-sm font-semibold">{notes.length} в Inbox</div>
         </div>
       ) : null}
-      <button
-        type="button"
-        className="flex h-10 w-full items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent"
-        onClick={ask}
-      >
-        Спросить агента
-      </button>
     </FoldCard>
   );
 }

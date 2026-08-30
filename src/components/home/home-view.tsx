@@ -11,6 +11,7 @@ import { TasksCard } from "@/components/home/tasks-card";
 import { CalendarCard } from "@/components/home/calendar-card";
 import { InboxCard } from "@/components/home/inbox-card";
 import { RemindersCard } from "@/components/home/reminders-card";
+import { QuickActionsCard, WeeklyReviewCard } from "@/components/home/productivity-cards";
 
 import { UsefulTodayCard } from "@/components/home/useful-today-card";
 import { useSettings } from "@/lib/stores/settings";
@@ -34,6 +35,8 @@ export function HomeView() {
         <SummaryStrip />
         <div className="hub-grid px-4 sm:px-6">
           <TodayCard />
+          <QuickActionsCard />
+          <WeeklyReviewCard />
           <UsefulTodayCard />
           <RemindersCard />
           {show("inbox") ? <InboxCard /> : null}

@@ -1,4 +1,4 @@
-import { CalendarPlus, CheckCircle2, Inbox, MessageCircle, Plus } from "lucide-react";
+import { CalendarPlus, CheckCircle2, Inbox, Plus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTasks } from "@/lib/stores/tasks";
 import { useCalendar } from "@/lib/stores/calendar";
@@ -13,7 +13,6 @@ export function QuickActionsCard() {
     ["Задача", "/", Plus],
     ["Событие", "/calendar", CalendarPlus],
     ["Inbox", "/", Inbox],
-    ["Агент", "/chat", MessageCircle],
   ] as const;
   return (
     <Card className="p-3">

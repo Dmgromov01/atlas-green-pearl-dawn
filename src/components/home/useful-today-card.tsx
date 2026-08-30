@@ -7,11 +7,16 @@ import { Button } from "@/components/ui/button";
 import { ServiceRow } from "@/components/shell/service-row";
 import { useSettings } from "@/lib/stores/settings";
 import { getAirQuality, getNextHoliday, wikipediaSummary } from "@/lib/server/free-apis";
+import { normalizeCountryCode } from "@/lib/server/free-apis-pure";
 
 function airTone(label?: string) {
   if (label === "хороший") return "text-emerald-600 dark:text-emerald-400";
   if (label === "умеренный") return "text-amber-600 dark:text-amber-400";
   return "text-muted-foreground";
+}
+
+function errorText(error: unknown) {
+  return error instanceof Error && error.message ? error.message : "Не удалось получить данные";
 }
 
 export function UsefulTodayCard() {
@@ -26,8 +31,8 @@ export function UsefulTodayCard() {
     retry: 1,
   });
   const holiday = useQuery({
-    queryKey: ["next-holiday", city?.country || "RU"],
-    queryFn: () => getNextHoliday({ data: { countryCode: "RU" } }),
+    queryKey: ["next-holiday", normalizeCountryCode(city?.country)],
+    queryFn: () => getNextHoliday({ data: { countryCode: normalizeCountryCode(city?.country) } }),
     staleTime: 24 * 60 * 60_000,
     retry: 1,
   });
@@ -45,8 +50,21 @@ export function UsefulTodayCard() {
         <ServiceRow
           icon={<Wind className="size-4" />}
           title="Качество воздуха"
-          status={air.isPending ? "обновляю…" : air.data ? air.data.label : "нет данных"}
+          status={
+            !city
+              ? "выберите город"
+              : air.isPending
+                ? "обновляю…"
+                : air.isError
+                  ? errorText(air.error)
+                  : air.data?.label || "нет данных"
+          }
         />
+        {air.isError ? (
+          <Button variant="ghost" size="sm" className="w-fit" onClick={() => void air.refetch()}>
+            Повторить
+          </Button>
+        ) : null}
         {air.data?.aqi !== null && air.data?.aqi !== undefined ? (
           <div className={`px-3 text-sm font-semibold ${airTone(air.data.label)}`}>
             AQI {air.data.aqi} · PM2.5 {air.data.pm25 ?? "—"}
@@ -56,8 +74,19 @@ export function UsefulTodayCard() {
       <ServiceRow
         icon={<CalendarDays className="size-4" />}
         title="Ближайший праздник"
-        status={holiday.data ? holiday.data.date : holiday.isPending ? "проверяю…" : "нет данных"}
+        status={
+          holiday.isPending
+            ? "проверяю…"
+            : holiday.isError
+              ? errorText(holiday.error)
+              : holiday.data?.date || "нет ближайших праздников"
+        }
       />
+      {holiday.isError ? (
+        <Button variant="ghost" size="sm" className="w-fit" onClick={() => void holiday.refetch()}>
+          Повторить
+        </Button>
+      ) : null}
       {holiday.data ? <p className="px-3 text-sm font-semibold">{holiday.data.localName}</p> : null}
       <div className="border-t border-border pt-3">
         <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
@@ -84,7 +113,14 @@ export function UsefulTodayCard() {
             </a>
             <p className="leading-snug text-muted-foreground">{wiki.data.extract}</p>
           </div>
-        ) : wikiTitle && !wiki.isPending ? (
+        ) : wiki.isError ? (
+          <div className="mt-2 flex items-center gap-2">
+            <p className="text-xs text-destructive">{errorText(wiki.error)}</p>
+            <Button variant="ghost" size="sm" onClick={() => void wiki.refetch()}>
+              Повторить
+            </Button>
+          </div>
+        ) : wikiTitle && !wiki.isPending && !wiki.data ? (
           <p className="mt-2 text-xs text-muted-foreground">Статья не найдена.</p>
         ) : null}
       </div>
