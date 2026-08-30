@@ -24,7 +24,7 @@ function sourceHint(ev: CalEvent) {
   if (ev.source === "ics") return "iCal";
   if (ev.source === "shared" || ev.shared) return ev.ownerName ? `семья · ${ev.ownerName}` : "семья";
   if (ev.source === "holiday") return "праздник";
-  if (ev.icloudHref) return ev.shared ? "семья · iPhone" : "iPhone";
+  if (ev.icloudHref) return "архив iPhone";
   if (ev.googleEventId) return ev.shared ? "семья · Google" : "Google";
   return "";
 }

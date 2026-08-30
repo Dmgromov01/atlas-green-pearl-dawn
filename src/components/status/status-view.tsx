@@ -68,16 +68,11 @@ export function StatusView() {
           <SectionLabel>iCloud</SectionLabel>
           <div className="flex items-center justify-between gap-2">
             <div className="text-sm font-semibold">Личный CalDAV</div>
-            <Pill
-              ok={Boolean(s?.calendar.icloud.connected)}
-              label={s?.calendar.icloud.connected ? "подключен" : "нет"}
-            />
+            <Pill ok={false} label="отключён" />
           </div>
-          <p className="text-xs leading-snug text-muted-foreground">{s?.calendar.icloud.note}</p>
-          {s?.calendar.icloud.appleId ? (
-            <p className="text-xs text-muted-foreground">{s.calendar.icloud.appleId}</p>
-          ) : null}
-          {s?.calendar.icloud.error ? <p className="text-xs text-destructive">{s.calendar.icloud.error}</p> : null}
+          <p className="text-xs leading-snug text-muted-foreground">
+            {s?.calendar.icloud.note ?? "Код CalDAV dormant. Живой календарь хаба — Google."}
+          </p>
         </Card>
 
         <Card className="space-y-2 p-4">

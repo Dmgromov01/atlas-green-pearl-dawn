@@ -1,32 +1,33 @@
 import { createServerFn } from "@tanstack/react-start";
 
+const DORMANT = "iCloud CalDAV в хабе отключён. Канон — Google Calendar.";
+
+function rejectDormant(): never {
+  throw new Error(DORMANT);
+}
+
+/** Kept so stale clients fail closed. CalDAV lives in icloud.server.ts, unused. */
 export const icloudSave = createServerFn({ method: "POST" })
   .validator((data: { token: string; appleId: string; password: string }) => data)
-  .handler(async ({ data }) => {
-    const { saveIcloud } = await import("./icloud.server");
-    return saveIcloud(data);
-  });
+  .handler(async () => rejectDormant());
 
 export const icloudSaveCalendars = createServerFn({ method: "POST" })
   .validator((data: { token: string; primaryHref: string; familyHref: string }) => data)
-  .handler(async ({ data }) => {
-    const { saveIcloudCalendars } = await import("./icloud.server");
-    return saveIcloudCalendars(data);
-  });
+  .handler(async () => rejectDormant());
 
 export const icloudStatus = createServerFn({ method: "POST" })
   .validator((data: { token: string }) => data)
-  .handler(async ({ data }) => {
-    const { statusIcloud } = await import("./icloud.server");
-    return statusIcloud(data.token);
-  });
+  .handler(async () => ({
+    connected: false as const,
+    appleId: null,
+    familyHref: null,
+    error: null,
+    note: DORMANT,
+  }));
 
 export const icloudDisconnect = createServerFn({ method: "POST" })
   .validator((data: { token: string }) => data)
-  .handler(async ({ data }) => {
-    const { disconnectIcloud } = await import("./icloud.server");
-    return disconnectIcloud(data.token);
-  });
+  .handler(async () => ({ ok: true as const, note: DORMANT }));
 
 export const icloudUpsertEvent = createServerFn({ method: "POST" })
   .validator(
@@ -40,17 +41,11 @@ export const icloudUpsertEvent = createServerFn({ method: "POST" })
       href?: string;
     }) => data,
   )
-  .handler(async ({ data }) => {
-    const { upsertIcloudEvent } = await import("./icloud.server");
-    return upsertIcloudEvent(data);
-  });
+  .handler(async () => rejectDormant());
 
 export const icloudDeleteEvent = createServerFn({ method: "POST" })
   .validator((data: { token: string; href?: string; localId: string; shared?: boolean }) => data)
-  .handler(async ({ data }) => {
-    const { deleteIcloudEvent } = await import("./icloud.server");
-    return deleteIcloudEvent(data);
-  });
+  .handler(async () => ({ ok: true as const }));
 
 export const icloudCreateCalendar = createServerFn({ method: "POST" })
   .validator(
@@ -65,10 +60,7 @@ export const icloudCreateCalendar = createServerFn({ method: "POST" })
       allowInvite?: boolean;
     }) => data,
   )
-  .handler(async ({ data }) => {
-    const { createIcloudCalendar } = await import("./icloud.server");
-    return createIcloudCalendar(data);
-  });
+  .handler(async () => rejectDormant());
 
 export const icloudUpdateCalendar = createServerFn({ method: "POST" })
   .validator(
@@ -82,35 +74,20 @@ export const icloudUpdateCalendar = createServerFn({ method: "POST" })
       publish?: boolean;
     }) => data,
   )
-  .handler(async ({ data }) => {
-    const { updateIcloudCalendar } = await import("./icloud.server");
-    return updateIcloudCalendar(data);
-  });
+  .handler(async () => rejectDormant());
 
 export const icloudDeleteCalendar = createServerFn({ method: "POST" })
   .validator((data: { token: string; href: string }) => data)
-  .handler(async ({ data }) => {
-    const { deleteIcloudCalendar } = await import("./icloud.server");
-    return deleteIcloudCalendar(data);
-  });
+  .handler(async () => rejectDormant());
 
 export const icloudShareCalendar = createServerFn({ method: "POST" })
   .validator((data: { token: string; href: string; emails: string; write?: boolean }) => data)
-  .handler(async ({ data }) => {
-    const { shareIcloudCalendar } = await import("./icloud.server");
-    return shareIcloudCalendar(data);
-  });
+  .handler(async () => rejectDormant());
 
 export const icloudUnshareCalendar = createServerFn({ method: "POST" })
   .validator((data: { token: string; href: string; email: string }) => data)
-  .handler(async ({ data }) => {
-    const { unshareIcloudCalendar } = await import("./icloud.server");
-    return unshareIcloudCalendar(data);
-  });
+  .handler(async () => rejectDormant());
 
 export const icloudCalendarInfo = createServerFn({ method: "POST" })
   .validator((data: { token: string; href: string }) => data)
-  .handler(async ({ data }) => {
-    const { calendarInfoIcloud } = await import("./icloud.server");
-    return calendarInfoIcloud(data);
-  });
+  .handler(async () => rejectDormant());
