@@ -1,3 +1,19 @@
+# AI Personal Hub — atlas-green-pearl-dawn
+
+This is the live family hub (`https://hub.gbkz.uk`), not an App Builder sandbox.
+
+Product overrides (these win over the leftover template below):
+
+- Calendar canon is **Google**. iCloud UI and autosync are off. Do not drop `hub_icloud` or `src/lib/server/icloud.server.ts` without an explicit migration.
+- Grok PWA chrome is **disabled**: no `grokPwaPlugin()` in vite, `server/middleware/grok-pwa.ts` is a no-op, `public/__grok/` is gone. The hub uses `public/manifest.webmanifest` and head tags in `src/routes/__root.tsx`.
+- Do not merge `fix/hide-chat-and-stabilize-integrations` or `audit/health-pglite-2026-08` (Wikipedia / AQI / hide-chat).
+- Do not add new hub features without explicit ТЗ. Do not rewrite product code for cleanup-of-cleanup.
+- Runtime: systemd `r2d2-hub` → `.output/server/index.mjs` on `127.0.0.1:8091`. Ignore sandbox `:8080` / Vercel rules on the live host.
+
+The remainder of this file is leftover App Builder contract for the TanStack stack. Follow stack facts (ports in `vite.config.ts`, `npm run start` = Nitro). Ignore preview-bridge, Grok install pill, and "never delete public/__grok" rules — they are obsolete here.
+
+---
+
 # App Builder Workspace
 
 **The single source of truth** for the App Builder sandbox contract. You are

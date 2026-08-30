@@ -1,6 +1,6 @@
 # AI Personal Hub
 
-Семейный хаб: погода, задачи, календари iCloud и Google, дайджест, переводчик, агент через OpenClaw. Русский интерфейс.
+Семейный хаб: погода, задачи, Google Calendar, дайджест, переводчик, агент через OpenClaw. Русский интерфейс.
 
 Репозиторий: [Dmgromov01/atlas-green-pearl-dawn](https://github.com/Dmgromov01/atlas-green-pearl-dawn)
 

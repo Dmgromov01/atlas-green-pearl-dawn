@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { gcalStatus } from "@/lib/server/gcal";
-import { icloudStatus } from "@/lib/server/icloud";
 import { hubCreateInvite, hubListInvites } from "@/lib/server/hub-auth";
 import { useHub } from "@/lib/stores/hub";
 import { useSettings } from "@/lib/stores/settings";
@@ -22,12 +21,6 @@ export function FamilyCard() {
   const gcal = useQuery({
     queryKey: ["gcal", token],
     queryFn: () => gcalStatus({ data: { token } }),
-    enabled: Boolean(token),
-    staleTime: 30_000,
-  });
-  const icloud = useQuery({
-    queryKey: ["icloud", token],
-    queryFn: () => icloudStatus({ data: { token } }),
     enabled: Boolean(token),
     staleTime: 30_000,
   });
@@ -68,9 +61,7 @@ export function FamilyCard() {
         )}
       </div>
       <p className="text-xs leading-snug text-muted-foreground">
-        {icloud.data?.connected
-          ? "iCloud подключён как личный CalDAV этого Apple ID. Это не «Семья» на iPhone."
-          : "iCloud не обязателен. Семейные встречи идут в Google Calendar."}
+        Семейные встречи пишутся в Google Calendar. iCloud CalDAV в хабе отключён.
       </p>
       {me?.role === "admin" ? (
         <div className="space-y-2">

@@ -89,7 +89,7 @@
 | `TELEGRAM_OWNER_ID` | `1916536646` |
 | `PGLITE_DATA_DIR` | `/var/lib/r2d2/pglite` |
 
-Календари: `ICLOUD_*`, `GOOGLE_CALENDAR_*` или Настройки.
+Календари: Google Calendar (`GOOGLE_CALENDAR_*` или Настройки). iCloud CalDAV в репо dormant — UI и автосинк отключены, таблицу `hub_icloud` не дропать.
 
 ---
 
@@ -114,4 +114,4 @@ HUB_RESTART_CMD='systemctl restart r2d2-hub'
 
 ## Что уже в коде
 
-Погода, задачи, дайджест, переводчик, iCloud/Google, чат OpenClaw, Face ID / PIN / инвайт, админка, watchdog, backup-скрипт.
+Погода, задачи, дайджест, переводчик, Google Calendar, чат OpenClaw, Face ID / PIN / инвайт, админка, watchdog, backup-скрипт. iCloud UI отключён.

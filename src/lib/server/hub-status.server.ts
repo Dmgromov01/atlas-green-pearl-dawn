@@ -2,7 +2,6 @@ import { getSql } from "@/lib/db";
 import { envGatewayUrl } from "./openclaw.server";
 import { requireHubUser } from "./hub-auth.server";
 import { statusGcal } from "./gcal.server";
-import { statusIcloud } from "./icloud.server";
 
 async function pingGateway() {
   const url = envGatewayUrl();
@@ -16,9 +15,8 @@ async function pingGateway() {
 
 export async function systemStatusHub(token?: string) {
   const { user } = await requireHubUser(token);
-  const [gcal, icloud, gateway] = await Promise.all([
+  const [gcal, gateway] = await Promise.all([
     statusGcal(token ?? "cookie"),
-    statusIcloud(token ?? "cookie"),
     pingGateway(),
   ]);
   return {
@@ -32,11 +30,11 @@ export async function systemStatusHub(token?: string) {
         note: "Живой семейный календарь хаба — Google Calendar. События с пометкой «семья» пишутся туда.",
       },
       icloud: {
-        connected: icloud.connected,
-        appleId: "appleId" in icloud ? icloud.appleId : null,
-        familyHref: "familyHref" in icloud ? icloud.familyHref : null,
-        error: "error" in icloud ? icloud.error : null,
-        note: "iCloud — личный CalDAV этого Apple ID. Это не «Семья» iPhone Sharing, пока календарь не выбран явно.",
+        connected: false,
+        appleId: null,
+        familyHref: null,
+        error: null,
+        note: "iCloud CalDAV в хабе dormant: UI и автосинк отключены, таблица hub_icloud не дропается.",
       },
     },
     gateway,
