@@ -1,6 +1,6 @@
 import { APP_NAME, APP_SHORT } from "@/lib/brand";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
-import { AuthProvider } from "@/lib/auth/provider";
+import { AppProviders } from "@/lib/auth/provider";
 import { HubBoot } from "@/components/hub-boot";
 import { PersistBoot } from "@/components/persist-boot";
 import { SwBoot } from "@/components/sw-boot";
@@ -43,7 +43,7 @@ function RootDocument() {
         <HeadContent />
       </head>
       <body className="antialiased">
-        <AuthProvider>
+        <AppProviders>
           <PersistBoot />
           <SwBoot />
           <QuietBoundary>
@@ -52,7 +52,7 @@ function RootDocument() {
           <Gate>
             <Outlet />
           </Gate>
-        </AuthProvider>
+        </AppProviders>
         <Scripts />
       </body>
     </html>

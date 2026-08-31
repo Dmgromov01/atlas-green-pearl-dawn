@@ -27,10 +27,22 @@
  * favicon, PWA icons and title for a plain utility that keeps the og.grok.me
  * card — where no card is the expected verdict rather than a failure.
  */
-import { existsSync, statSync } from "node:fs";
+import { existsSync, statSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { OG_SITE_REL_PATH, readOgSite, siteHasCustomCard } from "./grok-pwa-shared.mjs";
+export const OG_SITE_REL_PATH = "src/lib/og/site.json";
+
+function readOgSite(root) {
+  try {
+    return JSON.parse(readFileSync(join(root, OG_SITE_REL_PATH), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function siteHasCustomCard(site) {
+  return site?.card === "custom";
+}
 
 // Over this, link scrapers (X card previews included) time out or skip the
 // image, so the card silently fails to unfurl. The og skill's JPEG contract

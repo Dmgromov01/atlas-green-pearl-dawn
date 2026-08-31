@@ -1,3 +1,9 @@
+# AI Personal Hub / r2d2-hub
+
+Прод hiplet: systemd r2d2-hub на 127.0.0.1:8091. Это не Grok-игра.
+Auth = Face ID + PIN через hub-auth, не Better Auth accounts.
+Не добавлять Mini App login.
+
 # AI Personal Hub — atlas-green-pearl-dawn
 
 This is the live family hub (`https://hub.gbkz.uk`), not an App Builder sandbox.

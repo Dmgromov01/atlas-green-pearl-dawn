@@ -32,30 +32,30 @@ type Row = {
 };
 
 const TABLE: Record<number, Row> = {
-  0: { label: "Ясно", day: "clear-day", night: "clear-night", hero: "sunny-background.png", heroNight: "clear-night.png", tone: "clear" },
-  1: { label: "Почти ясно", day: "partly-cloudy-day", night: "partly-cloudy-night", hero: "mostly-sunny-background.png", heroNight: "partly-cloudy-night.png", tone: "clear" },
-  2: { label: "Переменная облачность", day: "partly-cloudy-day", night: "partly-cloudy-night", hero: "partly-cloudy-background.png", heroNight: "partly-cloudy-night.png", tone: "cloud" },
-  3: { label: "Пасмурно", day: "overcast", night: "overcast-night", hero: "overcast-background.png", heroNight: "cloudy-night.png", tone: "cloud" },
-  45: { label: "Туман", day: "fog", night: "fog-night", hero: "fog-background.png", heroNight: "cloudy-night.png", tone: "fog" },
-  48: { label: "Изморозь", day: "fog", night: "fog-night", hero: "fog-background.png", heroNight: "cloudy-night.png", tone: "fog" },
-  51: { label: "Морось", day: "drizzle", night: "drizzle", hero: "drizzle-background.png", heroNight: "rain-night.png", tone: "rain" },
-  53: { label: "Морось", day: "drizzle", night: "drizzle", hero: "drizzle-background.png", heroNight: "rain-night.png", tone: "rain" },
-  55: { label: "Сильная морось", day: "drizzle", night: "drizzle", hero: "drizzle-background.png", heroNight: "rain-night.png", tone: "rain" },
-  61: { label: "Небольшой дождь", day: "rain", night: "rain", hero: "rain-background.png", heroNight: "rain-night.png", tone: "rain" },
-  63: { label: "Дождь", day: "rain", night: "rain", hero: "rain-background.png", heroNight: "rain-night.png", tone: "rain" },
-  65: { label: "Сильный дождь", day: "rain", night: "rain", hero: "heavy-rain-background.png", heroNight: "rain-night.png", tone: "rain" },
-  71: { label: "Небольшой снег", day: "snow", night: "snow", hero: "light-snow-background.png", heroNight: "snow-night.png", tone: "snow" },
-  73: { label: "Снег", day: "snow", night: "snow", hero: "snow-background.png", heroNight: "snow-night.png", tone: "snow" },
-  75: { label: "Сильный снег", day: "snow", night: "snow", hero: "snow-background.png", heroNight: "snow-night.png", tone: "snow" },
-  77: { label: "Снежные зёрна", day: "sleet", night: "sleet", hero: "sleet-background.png", heroNight: "snow-night.png", tone: "snow" },
-  80: { label: "Ливень", day: "rain", night: "rain", hero: "rain-background.png", heroNight: "rain-night.png", tone: "rain" },
-  81: { label: "Ливень", day: "rain", night: "rain", hero: "heavy-rain-background.png", heroNight: "rain-night.png", tone: "rain" },
-  82: { label: "Сильный ливень", day: "thunderstorms", night: "thunderstorms", hero: "thunderstorm-background.png", heroNight: "thunderstorm-night.png", tone: "storm" },
-  85: { label: "Снегопад", day: "snow", night: "snow", hero: "snow-background.png", heroNight: "snow-night.png", tone: "snow" },
-  86: { label: "Сильный снегопад", day: "snow", night: "snow", hero: "snow-background.png", heroNight: "snow-night.png", tone: "snow" },
-  95: { label: "Гроза", day: "thunderstorms", night: "thunderstorms", hero: "thunderstorm-background.png", heroNight: "thunderstorm-night.png", tone: "storm" },
-  96: { label: "Гроза с градом", day: "thunderstorms", night: "thunderstorms", hero: "thunderstorm-background.png", heroNight: "thunderstorm-night.png", tone: "storm" },
-  99: { label: "Гроза с градом", day: "thunderstorms", night: "thunderstorms", hero: "thunderstorm-background.png", heroNight: "thunderstorm-night.png", tone: "storm" },
+  0: { label: "Ясно", day: "clear-day", night: "clear-night", hero: "sunny-background.jpg", heroNight: "clear-night.jpg", tone: "clear" },
+  1: { label: "Почти ясно", day: "partly-cloudy-day", night: "partly-cloudy-night", hero: "mostly-sunny-background.jpg", heroNight: "partly-cloudy-night.jpg", tone: "clear" },
+  2: { label: "Переменная облачность", day: "partly-cloudy-day", night: "partly-cloudy-night", hero: "partly-cloudy-background.jpg", heroNight: "partly-cloudy-night.jpg", tone: "cloud" },
+  3: { label: "Пасмурно", day: "overcast", night: "overcast-night", hero: "overcast-background.jpg", heroNight: "cloudy-night.jpg", tone: "cloud" },
+  45: { label: "Туман", day: "fog", night: "fog-night", hero: "fog-background.jpg", heroNight: "cloudy-night.jpg", tone: "fog" },
+  48: { label: "Изморозь", day: "fog", night: "fog-night", hero: "fog-background.jpg", heroNight: "cloudy-night.jpg", tone: "fog" },
+  51: { label: "Морось", day: "drizzle", night: "drizzle", hero: "drizzle-background.jpg", heroNight: "rain-night.jpg", tone: "rain" },
+  53: { label: "Морось", day: "drizzle", night: "drizzle", hero: "drizzle-background.jpg", heroNight: "rain-night.jpg", tone: "rain" },
+  55: { label: "Сильная морось", day: "drizzle", night: "drizzle", hero: "drizzle-background.jpg", heroNight: "rain-night.jpg", tone: "rain" },
+  61: { label: "Небольшой дождь", day: "rain", night: "rain", hero: "rain-background.jpg", heroNight: "rain-night.jpg", tone: "rain" },
+  63: { label: "Дождь", day: "rain", night: "rain", hero: "rain-background.jpg", heroNight: "rain-night.jpg", tone: "rain" },
+  65: { label: "Сильный дождь", day: "rain", night: "rain", hero: "heavy-rain-background.jpg", heroNight: "rain-night.jpg", tone: "rain" },
+  71: { label: "Небольшой снег", day: "snow", night: "snow", hero: "light-snow-background.jpg", heroNight: "snow-night.jpg", tone: "snow" },
+  73: { label: "Снег", day: "snow", night: "snow", hero: "snow-background.jpg", heroNight: "snow-night.jpg", tone: "snow" },
+  75: { label: "Сильный снег", day: "snow", night: "snow", hero: "snow-background.jpg", heroNight: "snow-night.jpg", tone: "snow" },
+  77: { label: "Снежные зёрна", day: "sleet", night: "sleet", hero: "sleet-background.jpg", heroNight: "snow-night.jpg", tone: "snow" },
+  80: { label: "Ливень", day: "rain", night: "rain", hero: "rain-background.jpg", heroNight: "rain-night.jpg", tone: "rain" },
+  81: { label: "Ливень", day: "rain", night: "rain", hero: "heavy-rain-background.jpg", heroNight: "rain-night.jpg", tone: "rain" },
+  82: { label: "Сильный ливень", day: "thunderstorms", night: "thunderstorms", hero: "thunderstorm-background.jpg", heroNight: "thunderstorm-night.jpg", tone: "storm" },
+  85: { label: "Снегопад", day: "snow", night: "snow", hero: "snow-background.jpg", heroNight: "snow-night.jpg", tone: "snow" },
+  86: { label: "Сильный снегопад", day: "snow", night: "snow", hero: "snow-background.jpg", heroNight: "snow-night.jpg", tone: "snow" },
+  95: { label: "Гроза", day: "thunderstorms", night: "thunderstorms", hero: "thunderstorm-background.jpg", heroNight: "thunderstorm-night.jpg", tone: "storm" },
+  96: { label: "Гроза с градом", day: "thunderstorms", night: "thunderstorms", hero: "thunderstorm-background.jpg", heroNight: "thunderstorm-night.jpg", tone: "storm" },
+  99: { label: "Гроза с градом", day: "thunderstorms", night: "thunderstorms", hero: "thunderstorm-background.jpg", heroNight: "thunderstorm-night.jpg", tone: "storm" },
 };
 
 export function hourInTz(iso: string | Date, tz: string) {
@@ -88,7 +88,7 @@ export function weatherInfo(code: number, night: boolean): WeatherInfo {
 }
 
 export function windHero(night: boolean) {
-  return night ? "cloudy-night.png" : "wind-background.png";
+  return night ? "cloudy-night.jpg" : "wind-background.jpg";
 }
 
 export function hourlyIcon(code: number, rain: number, snow: number, night: boolean): WeatherIcon {

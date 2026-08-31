@@ -122,14 +122,14 @@ function fromOpenMeteo(raw: OpenMeteo, city: string, tz: string): WeatherNow {
 function metNoIcon(symbol: string, night: boolean): { icon: WeatherIcon; tone: WeatherNow["tone"]; label: string; hero: string } {
   const s = symbol.replace(/_(day|night|polartwilight)$/i, "");
   const n = night;
-  if (s.includes("thunder")) return { icon: "thunderstorms", tone: "storm", label: "Гроза", hero: n ? "thunderstorm-night.png" : "thunderstorm-background.png" };
-  if (s.includes("snow") || s.includes("sleet")) return { icon: "snow", tone: "snow", label: "Снег", hero: n ? "snow-night.png" : "snow-background.png" };
-  if (s.includes("rain") || s.includes("shower")) return { icon: "rain", tone: "rain", label: "Дождь", hero: n ? "rain-night.png" : "rain-background.png" };
-  if (s.includes("drizzle")) return { icon: "drizzle", tone: "rain", label: "Морось", hero: n ? "rain-night.png" : "drizzle-background.png" };
-  if (s.includes("fog") || s.includes("mist")) return { icon: n ? "fog-night" : "fog", tone: "fog", label: "Туман", hero: n ? "cloudy-night.png" : "fog-background.png" };
-  if (s === "cloudy") return { icon: n ? "overcast-night" : "overcast", tone: "cloud", label: "Пасмурно", hero: n ? "cloudy-night.png" : "overcast-background.png" };
-  if (s.includes("partly") || s === "fair") return { icon: n ? "partly-cloudy-night" : "partly-cloudy-day", tone: "cloud", label: "Переменная облачность", hero: n ? "partly-cloudy-night.png" : "partly-cloudy-background.png" };
-  return { icon: n ? "clear-night" : "clear-day", tone: "clear", label: "Ясно", hero: n ? "clear-night.png" : "sunny-background.png" };
+  if (s.includes("thunder")) return { icon: "thunderstorms", tone: "storm", label: "Гроза", hero: n ? "thunderstorm-night.jpg" : "thunderstorm-background.jpg" };
+  if (s.includes("snow") || s.includes("sleet")) return { icon: "snow", tone: "snow", label: "Снег", hero: n ? "snow-night.jpg" : "snow-background.jpg" };
+  if (s.includes("rain") || s.includes("shower")) return { icon: "rain", tone: "rain", label: "Дождь", hero: n ? "rain-night.jpg" : "rain-background.jpg" };
+  if (s.includes("drizzle")) return { icon: "drizzle", tone: "rain", label: "Морось", hero: n ? "rain-night.jpg" : "drizzle-background.jpg" };
+  if (s.includes("fog") || s.includes("mist")) return { icon: n ? "fog-night" : "fog", tone: "fog", label: "Туман", hero: n ? "cloudy-night.jpg" : "fog-background.jpg" };
+  if (s === "cloudy") return { icon: n ? "overcast-night" : "overcast", tone: "cloud", label: "Пасмурно", hero: n ? "cloudy-night.jpg" : "overcast-background.jpg" };
+  if (s.includes("partly") || s === "fair") return { icon: n ? "partly-cloudy-night" : "partly-cloudy-day", tone: "cloud", label: "Переменная облачность", hero: n ? "partly-cloudy-night.jpg" : "partly-cloudy-background.jpg" };
+  return { icon: n ? "clear-night" : "clear-day", tone: "clear", label: "Ясно", hero: n ? "clear-night.jpg" : "sunny-background.jpg" };
 }
 
 function fromMetNo(raw: MetNo, city: string, tz: string): WeatherNow {

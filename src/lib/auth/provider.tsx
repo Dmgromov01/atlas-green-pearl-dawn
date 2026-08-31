@@ -4,7 +4,7 @@ import { queryClient } from "@/lib/query-client";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
