@@ -18,7 +18,7 @@
 
 ## Auth и чат
 - Вход: Face ID основной, PIN запасной, семья по одноразовому инвайту.
-- Не Telegram initData, не HMAC WebAppData, не Mini App.
+- Не принимать Telegram WebApp credentials и не возвращать Mini App.
 - Чат сайта → OpenClaw agent hub, session hub:<userId>, tool_choice none.
 - Агент hub: tools.allow=[]. Не включать tools.
 - Модель чата хаба: openclaw/hub. Оператор Telegram: @Dmbotmy_bot → main.
@@ -31,8 +31,8 @@
 
 ## Запреты на hiplet
 - Не слушать :8080. Не vite preview. Не Vercel preset как прод.
-- Не grokPwaPlugin, не PreviewHostBridge, не public/__grok.
-- Не возвращать Mini App, /miniapp/, miniapp.service.
+- Не возвращать legacy PWA bridge и public/__grok.
+- Не возвращать Mini App и его legacy routing/service.
 - Не открывать 8091/18789 на WAN. Не второй gateway.
 - Не рестартить openclaw-gateway из Telegram.
 - Не добавлять фичи без отдельного ТЗ со списком файлов.

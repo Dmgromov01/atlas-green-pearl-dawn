@@ -15,7 +15,7 @@ TanStack Start · React 19 · Tailwind v4 · Zustand · PGLite
 systemd r2d2-hub → node .output/server/index.mjs
 127.0.0.1:8091 ← nginx ← https://hub.gbkz.uk
 Probes: /healthz /readyz
-Auth: Face ID + PIN + одноразовый инвайт. Не Mini App, не Telegram initData.
+Auth: Face ID + PIN + одноразовый инвайт. Не Mini App и не Telegram WebApp credentials.
 
 ## Агент
 Чат сайта → OpenClaw agent hub, session hub:<userId>, tool_choice none,
