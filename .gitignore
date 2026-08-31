@@ -12,3 +12,6 @@ attachments/
 .grok/preview.log
 .grok/status
 .grok/preview.pid
+
+.grok/
+.grok/**
