@@ -56,9 +56,19 @@ test("non-.sql entries are dropped (readdir also yields the auth/ directory)", (
   assert.deepEqual(pendingMigrations(["auth", "README.md"], []), []);
 });
 
-test("the auth schema ships outside the globbed directory", () => {
+test("root migrations are discoverable while auth schema remains outside the glob", () => {
   const migrationsDir = join(projectRoot(), "migrations");
-  assert.deepEqual(pendingMigrations(readdirSync(migrationsDir), []), []);
+  assert.deepEqual(
+    pendingMigrations(readdirSync(migrationsDir), []),
+    [
+      "0002_hub.sql",
+      "0003_hub_share.sql",
+      "0004_gcal.sql",
+      "0005_gcal_family.sql",
+      "0006_icloud.sql",
+      "0007_ai_default_shared.sql",
+    ].map((name) => ({ name, path: name })),
+  );
   assert.ok(readdirSync(join(migrationsDir, "auth")).includes("0001_auth.sql"));
 });
 
