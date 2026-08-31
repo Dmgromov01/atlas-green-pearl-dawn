@@ -1,31 +1,33 @@
 # AI Personal Hub
 
-Семейный хаб: погода, задачи, Google Calendar, дайджест, переводчик, агент через OpenClaw. Русский интерфейс.
+Семейный хаб: погода, задачи, Google Calendar, дайджест, переводчик,
+напоминания, агент через OpenClaw. Русский интерфейс.
+Сайт: https://hub.gbkz.uk
 
-Репозиторий: [Dmgromov01/atlas-green-pearl-dawn](https://github.com/Dmgromov01/atlas-green-pearl-dawn)
+Канон деплоя: OPENCLAW.md
+Канон инфры: /root/openclaw/STATE.md
 
 ## Стек
+TanStack Start · React 19 · Tailwind v4 · Zustand · PGLite
+Прод: Nitro node-server, не vite preview и не Vercel.
 
-TanStack Start · React 19 · Tailwind v4 · Zustand · Postgres (Neon или PGLite)
+## Прод на hiplet
+systemd r2d2-hub → node .output/server/index.mjs
+127.0.0.1:8091 ← nginx ← https://hub.gbkz.uk
+Probes: /healthz /readyz
+Auth: Face ID + PIN + одноразовый инвайт. Не Mini App, не Telegram initData.
 
-## Запуск
+## Агент
+Чат сайта → OpenClaw agent hub, session hub:<userId>, tool_choice none,
+tools.allow=[], модель openclaw/hub.
+Оператор: @Dmbotmy_bot → main. Пейджер: @HubAlertsbot. Токены не смешивать.
+Gateway: http://127.0.0.1:18789 без /v1.
 
-```bash
-npm ci
-npm run dev
-```
+## Календарь
+Google OAuth хаба. iCloud dormant, hub_icloud не drop.
 
-Сборка: `npm run build`. Проверки: `npm run typecheck` и `npm test`.
-
-## Развёртывание и агент
-
-Полные шаги — в [OPENCLAW.md](./OPENCLAW.md).
-
-Коротко:
-
-- Хаб — отдельный сайт (экран Домой), не Telegram Mini App.
-- Чат в приложении идёт в локальный OpenClaw: `OPENCLAW_GATEWAY_URL=http://127.0.0.1:18789` без `/v1`, модель `openclaw/default`.
-- В шлюзе должно быть `gateway.http.endpoints.chatCompletions.enabled = true`.
-- Пейджер хаба — бот `@HubAlertsbot`. Канал OpenClaw — `@Dmbotmy_bot`. Токены не смешивать.
-- Первый открывший сайт становится владельцем: Face ID — основной вход, PIN — запасной. Семья — только по одноразовому инвайту.
-- Watchdog: `scripts/hub-watchdog.sh`.
+## Проверки (не прод-запуск)
+npm run typecheck
+npm test
+Сборка: npm run build — только когда есть отдельное ТЗ на релиз.
+Прод поднимает systemd, не npm run dev.
