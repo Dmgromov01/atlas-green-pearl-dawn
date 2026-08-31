@@ -1,13 +1,13 @@
 #!/bin/sh
 # Health loop for the hub. Does not rebuild. Does not print secrets.
-# Env: HUB_HEALTH_URL (default http://127.0.0.1:8091/)
+# Env: HUB_HEALTH_URL (default http://127.0.0.1:8091/healthz)
 #      HUB_RESTART_CMD (default: systemctl restart r2d2-hub)
 #      TELEGRAM_BOT_TOKEN + TELEGRAM_OWNER_ID for crash alerts
 #      WATCHDOG_STATE_DIR (default /tmp/hub-watchdog)
 
 set -eu
 
-HEALTH_URL="${HUB_HEALTH_URL:-http://127.0.0.1:8091/}"
+HEALTH_URL="${HUB_HEALTH_URL:-http://127.0.0.1:8091/healthz}"
 STATE_DIR="${WATCHDOG_STATE_DIR:-/tmp/hub-watchdog}"
 STORM_SEC="${WATCHDOG_STORM_SEC:-600}"
 RESTART_CMD="${HUB_RESTART_CMD:-systemctl restart r2d2-hub}"
