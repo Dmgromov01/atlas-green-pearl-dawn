@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTasks } from "@/lib/stores/tasks";
 import { Card } from "@/components/ui/card";
@@ -5,7 +6,8 @@ import { haptic } from "@/lib/haptic";
 
 export function ReadonlyTasksCard() {
   const navigate = useNavigate();
-  const tasks = useTasks((s) => s.tasks.filter((task) => !task.done));
+  const allTasks = useTasks((state) => state.tasks);
+  const tasks = useMemo(() => allTasks.filter((task) => !task.done), [allTasks]);
   const visible = tasks.slice(0, 3);
   return (
     <Card className="reference-card">
