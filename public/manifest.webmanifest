@@ -1,11 +1,11 @@
 {
-  "name": "AI Personal Hub",
-  "short_name": "AI Hub",
-  "description": "Личный хаб: погода, задачи, дайджест, напоминания и агент.",
+  "name": "AI Home Hub",
+  "short_name": "AI Home Hub",
+  "description": "Личный обзор дня: погода, задачи, календарь и дайджест.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F7FB",
-  "theme_color": "#F5F7FB",
+  "background_color": "#F7F8FA",
+  "theme_color": "#F7F8FA",
   "lang": "ru",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
