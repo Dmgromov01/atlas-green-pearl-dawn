@@ -641,3 +641,47 @@
   .reference-shell { border-inline: 1px solid var(--border); box-shadow: 0 0 40px rgba(16, 24, 40, 0.04); }
   .reference-tabbar { left: 50%; width: min(100%, var(--shell-max)); transform: translateX(-50%); border-inline: 1px solid var(--border); }
 }
+
+/* iPhone refinements: the home screen must fit 320–430 CSS px without overlap. */
+.reference-header { min-width: 0; min-height: 76px; padding: max(14px, env(safe-area-inset-top)) 16px 6px; }
+.reference-header h1 { overflow: hidden; font-size: clamp(24px, 7.3vw, 30px); text-overflow: ellipsis; white-space: nowrap; }
+.reference-home { gap: 18px; padding: 6px 16px 20px; }
+.weather-trend { margin-top: 0; }
+.weather-trend__meta { margin: 0 6px 5px; }
+.weather-trend__now { font-size: 25px; }
+.weather-trend__now svg { width: 23px; height: 23px; }
+.weather-trend__aqi { font-size: 18px; }
+.weather-trend__chart { height: 62px; }
+.weather-trend__axis { font-size: 16px; }
+.finance-ticker { padding: 18px 10px 17px; border-radius: 28px; }
+.finance-ticker__flag { font-size: 19px; }
+.finance-ticker__value { font-size: clamp(18px, 6vw, 25px); }
+.finance-ticker__code { font-size: 16px; }
+.reference-card { border-radius: 28px; }
+.reference-card__header { min-height: 72px; padding: 0 24px; }
+.reference-card__header h2 { font-size: 25px; }
+.reference-card__header span { font-size: 18px; }
+.schedule-row { grid-template-columns: 72px minmax(0, 1fr) auto; gap: 8px; min-height: 68px; padding: 9px 24px; }
+.schedule-row__time, .schedule-row__source { font-size: 16px; }
+.schedule-row__title { font-size: 18px; }
+.reference-more { min-height: 64px; padding: 0 24px; font-size: 18px; }
+.reference-empty { min-height: 68px; padding: 21px 24px; font-size: 17px; }
+.task-row { min-height: 94px; padding: 18px 24px; }
+.task-row__title { font-size: 19px; }
+.task-row__subtitle { font-size: 16px; }
+
+@keyframes route-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hub-route-enter { animation: route-enter 180ms var(--ease-out) both; }
+
+@media (max-width: 360px) {
+  .reference-header { gap: 9px; padding-inline: 14px; }
+  .reference-header img { width: 38px; height: 38px; }
+  .reference-header h1 { font-size: 24px; }
+  .reference-home { padding-inline: 14px; }
+  .schedule-row { grid-template-columns: 61px minmax(0, 1fr); padding-inline: 20px; }
+  .schedule-row__source { display: none; }
+  .finance-ticker__value { font-size: 19px; }
+}

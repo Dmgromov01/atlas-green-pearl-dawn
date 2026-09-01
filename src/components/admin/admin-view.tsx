@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shield, Trash2 } from "lucide-react";
+import { Copy, Shield, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { adminAudit, adminDeleteUser, adminListUsers, adminPatchUser } from "@/lib/server/hub-admin";
+import { hubCreateInvite, hubListInvites } from "@/lib/server/hub-auth";
 import { useHub } from "@/lib/stores/hub";
 import { AppShell } from "@/components/shell/app-shell";
 import { Header } from "@/components/shell/header";
@@ -16,6 +18,27 @@ export function AdminView() {
   const token = useHub((s) => s.token);
   const me = useHub((s) => s.user);
   const qc = useQueryClient();
+  const [inviteUrl, setInviteUrl] = useState("");
+  const invites = useQuery({
+    queryKey: ["invites"],
+    queryFn: () => hubListInvites({ data: { token } }),
+    enabled: Boolean(token && me?.role === "admin"),
+  });
+  const createInvite = useMutation({
+    mutationFn: () => hubCreateInvite({ data: { token } }),
+    onSuccess: async (result) => {
+      setInviteUrl(result.url);
+      void qc.invalidateQueries({ queryKey: ["invites"] });
+      try {
+        await navigator.clipboard.writeText(result.url);
+        toast("Инвайт скопирован. Действует 7 дней.");
+      } catch {
+        toast("Инвайт создан");
+      }
+      haptic("success");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const users = useQuery({
     queryKey: ["admin-users"],
@@ -61,6 +84,34 @@ export function AdminView() {
     <AppShell>
       <Header title="Админка" subtitle={`${users.data?.length ?? 0} пользователей`} backTo="/settings" />
       <Page>
+        <Card className="space-y-3 p-4">
+          <SectionLabel>Доступ семьи</SectionLabel>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Новый пользователь входит по одноразовому инвайту, затем привязывает Face ID. PIN остаётся запасным входом.
+          </p>
+          <Button className="w-full" variant="secondary" disabled={createInvite.isPending} onClick={() => void createInvite.mutate()}>
+            {createInvite.isPending ? "Создаю…" : "Создать инвайт"}
+          </Button>
+          {inviteUrl ? (
+            <div className="flex gap-2">
+              <Input readOnly value={inviteUrl} aria-label="Ссылка инвайта" />
+              <Button
+                variant="secondary"
+                size="icon"
+                aria-label="Скопировать инвайт"
+                onClick={() => void navigator.clipboard.writeText(inviteUrl).then(() => toast("Инвайт скопирован")).catch(() => toast.error("Не удалось скопировать ссылку"))}
+              >
+                <Copy className="size-4" />
+              </Button>
+            </div>
+          ) : null}
+          {(invites.data ?? []).slice(0, 5).map((invite) => (
+            <p key={invite.id} className="text-xs text-muted-foreground">
+              {invite.used_at ? "использован" : "ожидает"} · до {invite.expires_at.slice(0, 10)}
+              {invite.display_name ? ` · ${invite.display_name}` : ""}
+            </p>
+          ))}
+        </Card>
         {(users.data ?? []).map((u) => (
           <Card key={u.id} className="space-y-2 p-3">
             <div className="flex items-start justify-between gap-2">
