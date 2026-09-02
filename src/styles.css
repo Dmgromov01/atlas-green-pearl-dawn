@@ -685,3 +685,50 @@
   .schedule-row__source { display: none; }
   .finance-ticker__value { font-size: 19px; }
 }
+
+/* Home design system: typography, responsive rhythm and compositor-only motion. */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
+  --type-meta: 0.875rem;
+  --type-row: 1.125rem;
+  --type-section: 1.5625rem;
+  --type-greeting: clamp(1.5rem, 7.3vw, 1.875rem);
+  --motion-press: 120ms;
+  --motion-enter: 180ms;
+}
+
+.reference-home > * {
+  animation: home-reveal var(--motion-enter) var(--ease-out) both;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 8rem;
+}
+.reference-home > :nth-child(2) { animation-delay: 25ms; }
+.reference-home > :nth-child(3) { animation-delay: 50ms; }
+.reference-home > :nth-child(4) { animation-delay: 75ms; }
+.reference-home > :nth-child(5) { animation-delay: 100ms; }
+
+@keyframes home-reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reference-header h1 { font-size: var(--type-greeting); font-variant-numeric: lining-nums; }
+.reference-card__header h2 { font-size: var(--type-section); }
+.schedule-row__time, .schedule-row__source, .task-row__subtitle, .reference-more { font-size: var(--type-meta); }
+.schedule-row__title, .task-row__title { font-size: var(--type-row); }
+.finance-ticker__value, .weather-trend__now, .weather-trend__axis { font-variant-numeric: tabular-nums; }
+.reference-tabbar__item, .translator-link small { font-size: var(--type-meta); }
+
+.schedule-row, .task-row, .reference-more, .translator-link, .reference-tabbar__item {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--motion-press) var(--ease-out), color var(--motion-press) var(--ease-out), transform var(--motion-press) var(--ease-out);
+}
+.schedule-row:active, .task-row:active, .reference-more:active, .translator-link:active { transform: scale(0.992); }
+.reference-tabbar__item:active .reference-tabbar__icon { transform: scale(0.94); }
+.reference-tabbar__icon { transition: background-color var(--motion-press) var(--ease-out), transform var(--motion-press) var(--ease-out); }
+.reference-tabbar__item:focus-visible, .schedule-row:focus-visible, .task-row:focus-visible, .reference-more:focus-visible, .translator-link:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+
+@media (hover: hover) {
+  .schedule-row:hover, .task-row:hover, .reference-more:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+  .translator-link:hover { color: var(--accent); }
+}
