@@ -40,11 +40,7 @@ export async function cached<T>(
     return hit.data;
   }
 
-  try {
-    return await pending;
-  } catch (err) {
-    throw err;
-  }
+  return await pending;
 }
 
 export function bustTags(tags?: LiveTag[]) {

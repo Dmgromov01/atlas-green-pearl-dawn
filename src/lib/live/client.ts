@@ -9,7 +9,7 @@ export function connectHubLive(opts: {
 }): () => void {
   let stopped = false;
   let pollTimer: number | undefined;
-  let last = emptyVersions();
+  const last = emptyVersions();
   const tags = opts.tags?.length ? opts.tags.filter(isLiveTag) : [...LIVE_TAGS];
 
   const apply = (snap: Partial<Record<LiveTag, number>>, bump: boolean) => {
@@ -36,7 +36,7 @@ export function connectHubLive(opts: {
   };
 
   opts.onStatus("retry");
-  let startTimer: number | undefined = window.setTimeout(() => {
+  const startTimer: number | undefined = window.setTimeout(() => {
     void poll();
     pollTimer = window.setInterval(() => void poll(), 45_000);
   }, 4000);
