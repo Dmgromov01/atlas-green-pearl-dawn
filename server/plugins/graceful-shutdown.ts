@@ -2,27 +2,27 @@ import { dbSource, getPglite } from "@/lib/db";
 
 let stopping = false;
 
-/**
- * Nitro node-server doesn't install a working SIGTERM handler in this build, so
- * systemd escalates to SIGKILL after TimeoutStopSec. This closes the embedded
- * Postgres cleanly (WAL checkpoint) and exits fast, keeping restarts quick and
- * avoiding forced kills.
- */
+/** Close embedded Postgres cleanly and exit fast, avoiding systemd SIGKILL. */
 export default function gracefulShutdown(): void {
   const handle = (): void => {
     if (stopping) return;
     stopping = true;
-    // Hard ceiling: never let a stuck close hang the service.
-    const force = setTimeout(() => process.exit(0), 5000);
+    process.stderr.write("[shutdown] SIGTERM received\n");
+    const force = setTimeout(() => {
+      process.stderr.write("[shutdown] force-exit timer fired\n");
+      process.exit(0);
+    }, 5000);
     force.unref();
     (async () => {
       try {
         if (dbSource === "pglite") {
+          process.stderr.write("[shutdown] closing PGLite\n");
           const pg = await getPglite();
           await pg.close();
+          process.stderr.write("[shutdown] PGLite closed\n");
         }
-      } catch {
-        // Best effort — exit regardless.
+      } catch (err) {
+        process.stderr.write(`[shutdown] close error: ${String(err)}\n`);
       }
       process.exit(0);
     })();
