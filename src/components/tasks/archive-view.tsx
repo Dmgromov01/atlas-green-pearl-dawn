@@ -43,7 +43,7 @@ export function ArchiveView() {
           ) : (
             <div className="space-y-1.5 p-3">
               {done.map((t) => (
-                <div key={t.id} className="flex items-center gap-2 rounded-full border border-border bg-muted px-2.5 py-1.5">
+                <div key={t.id} className="flex items-center gap-2 rounded-md border border-border bg-muted px-2.5 py-1.5">
                   <button
                     type="button"
                     className="flex min-w-0 flex-1 items-center gap-3 text-left"

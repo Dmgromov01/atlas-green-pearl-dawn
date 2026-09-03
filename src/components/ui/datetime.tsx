@@ -1,7 +1,7 @@
 import { cn, formatDayLabel, localDateKey } from "@/lib/utils";
 
 const field =
-  "h-9 min-w-0 appearance-none rounded-full border border-border bg-muted px-3 text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "h-9 min-w-0 appearance-none rounded-md border border-border bg-muted px-3 text-xs font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 function slots() {
   const out: string[] = [];

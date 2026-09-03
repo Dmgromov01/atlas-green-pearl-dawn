@@ -293,7 +293,7 @@ export function GcalCard() {
         <div className="flex items-center gap-1">
           <button
             type="button"
-            className="grid size-9 place-items-center rounded-full text-accent"
+            className="grid size-9 place-items-center rounded-md text-accent"
             aria-label="Назад"
             onClick={() => setEditor(null)}
           >
@@ -345,12 +345,12 @@ export function GcalCard() {
           </div>
         </div>
 
-        <div className="flex min-h-11 items-center justify-between gap-3 rounded-2xl bg-muted px-3">
+        <div className="flex min-h-11 items-center justify-between gap-3 rounded-md bg-muted px-3">
           <div className="text-sm font-semibold">Учётная запись</div>
           <div className="text-sm text-muted-foreground">Google</div>
         </div>
 
-        <div className="space-y-2 rounded-2xl bg-muted px-3 py-3">
+        <div className="space-y-2 rounded-md bg-muted px-3 py-3">
           <div className="text-xs font-bold text-muted-foreground">Общий доступ</div>
           {editor.invitees.length ? (
             <div className="space-y-1">
@@ -423,7 +423,7 @@ export function GcalCard() {
         {editor.publish && editor.publishUrl ? (
           <button
             type="button"
-            className="w-full truncate rounded-2xl bg-muted px-3 py-2 text-left text-xs text-accent"
+            className="w-full truncate rounded-md bg-muted px-3 py-2 text-left text-xs text-accent"
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(editor.publishUrl);
@@ -529,7 +529,7 @@ export function GcalCard() {
       {connected ? (
         <>
           <div className="text-xs font-bold text-muted-foreground">Календари</div>
-          <div className="divide-y divide-border overflow-hidden rounded-2xl bg-muted">
+          <div className="divide-y divide-border overflow-hidden rounded-md bg-muted">
             {calendars.length === 0 ? (
               <div className="px-3 py-3 text-sm text-muted-foreground">Календарей пока нет</div>
             ) : (

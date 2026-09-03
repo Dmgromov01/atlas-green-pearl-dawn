@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { cached, fetchJson } from "./cache";
 import { hourlyIcon, hourInTz, isNightHours, weatherInfo, windHero, type WeatherIcon } from "@/lib/weather/codes";
+import { nextForecastHours } from "@/lib/weather/forecast";
+
 
 type WeatherPayload = {
   lat: number;
@@ -23,6 +25,8 @@ export type WeatherHour = {
   temp: number;
   icon: string;
   precip: number;
+  precipChance: number | null;
+  wind: number | null;
 };
 
 export type WeatherNow = {
@@ -34,6 +38,7 @@ export type WeatherNow = {
   hero: string;
   tone: string;
   night: boolean;
+  aqi: number | null;
   hourly: WeatherHour[];
   ts: number;
 };
@@ -43,16 +48,19 @@ type OpenMeteo = {
     temperature_2m: number;
     wind_speed_10m: number;
     weather_code: number;
-    time: string;
+    time: number;
   };
   hourly?: {
-    time: string[];
+    time: number[];
     temperature_2m: number[];
-    rain: number[];
-    snowfall: number[];
+    precipitation: number[];
+    precipitation_probability: number[];
     weather_code: number[];
+    wind_speed_10m: number[];
   };
 };
+
+type OpenMeteoAir = { current?: { european_aqi?: number } };
 
 type MetNo = {
   properties?: {
@@ -74,37 +82,34 @@ type Wttr = {
     weatherCode?: string;
   }[];
   weather?: {
+    date?: string;
     hourly?: { time?: string; tempC?: string; weatherDesc?: { value?: string }[]; precipMM?: string }[];
   }[];
 };
 
-function fromOpenMeteo(raw: OpenMeteo, city: string, tz: string): WeatherNow {
+function fromOpenMeteo(raw: OpenMeteo, city: string, tz: string, aqi: number | null): WeatherNow {
   const cur = raw.current;
   if (!cur) throw new Error("Нет данных о погоде");
-  const hour = hourInTz(cur.time, tz);
+  const currentTime = new Date(cur.time * 1000).toISOString();
+  const hour = hourInTz(currentTime, tz);
   const night = isNightHours(hour);
   const info = weatherInfo(cur.weather_code, night);
   const wind = Math.round(cur.wind_speed_10m * 10) / 10;
-  const hero =
-    wind >= 12 && (info.tone === "clear" || info.tone === "cloud") ? windHero(night) : info.hero;
-  const hourly: WeatherHour[] = [];
-  const times = raw.hourly?.time ?? [];
-  const now = Date.now() - 60 * 60 * 1000;
-  let start = times.findIndex((t) => new Date(t).getTime() >= now);
-  if (start < 0) start = 0;
-  for (let i = start; i < Math.min(start + 12, times.length); i++) {
-    const t = times[i]!;
-    const rain = raw.hourly?.rain[i] ?? 0;
-    const snow = raw.hourly?.snowfall[i] ?? 0;
+  const hero = wind >= 12 && (info.tone === "clear" || info.tone === "cloud") ? windHero(night) : info.hero;
+  const rows = (raw.hourly?.time ?? []).map((timestamp, i): WeatherHour => {
+    const time = new Date(timestamp * 1000).toISOString();
+    const precip = raw.hourly?.precipitation[i] ?? 0;
     const code = raw.hourly?.weather_code[i] ?? 0;
-    const h = hourInTz(t, tz);
-    hourly.push({
-      time: t,
+    const h = hourInTz(time, tz);
+    return {
+      time,
       temp: Math.round(raw.hourly?.temperature_2m[i] ?? 0),
-      icon: hourlyIcon(code, rain, snow, isNightHours(h)),
-      precip: rain + snow,
-    });
-  }
+      icon: hourlyIcon(code, precip, 0, isNightHours(h)),
+      precip,
+      precipChance: raw.hourly?.precipitation_probability[i] ?? null,
+      wind: raw.hourly?.wind_speed_10m[i] ?? null,
+    };
+  });
   return {
     city,
     temp: Math.round(cur.temperature_2m),
@@ -114,7 +119,8 @@ function fromOpenMeteo(raw: OpenMeteo, city: string, tz: string): WeatherNow {
     hero,
     tone: info.tone,
     night,
-    hourly,
+    aqi,
+    hourly: nextForecastHours(rows, cur.time * 1000),
     ts: Date.now(),
   };
 }
@@ -142,7 +148,7 @@ function fromMetNo(raw: MetNo, city: string, tz: string): WeatherNow {
   const night = isNightHours(hour);
   const symbol = now.data.next_1_hours?.summary?.symbol_code ?? "cloudy";
   const info = metNoIcon(symbol, night);
-  const hourly: WeatherHour[] = series.slice(0, 12).map((row) => {
+  const hourly: WeatherHour[] = series.slice(0, 24).map((row) => {
     const h = hourInTz(row.time, tz);
     const n = isNightHours(h);
     const sym = row.data.next_1_hours?.summary?.symbol_code ?? symbol;
@@ -152,6 +158,8 @@ function fromMetNo(raw: MetNo, city: string, tz: string): WeatherNow {
       temp: Math.round(row.data.instant.details.air_temperature ?? temp),
       icon: mapped.icon,
       precip: row.data.next_1_hours?.details?.precipitation_amount ?? 0,
+      precipChance: null,
+      wind: row.data.instant.details.wind_speed ?? null,
     };
   });
   return {
@@ -163,7 +171,8 @@ function fromMetNo(raw: MetNo, city: string, tz: string): WeatherNow {
     hero: info.hero,
     tone: info.tone,
     night,
-    hourly,
+    aqi: null,
+    hourly: nextForecastHours(hourly),
     ts: Date.now(),
   };
 }
@@ -191,18 +200,20 @@ function fromWttr(raw: Wttr, city: string, tz: string): WeatherNow {
   const night = isNightHours(hour);
   const desc = cur.weatherDesc?.[0]?.value || "облачно";
   const info = descInfo(desc, night);
-  const rows = raw.weather?.[0]?.hourly ?? [];
-  const hourly: WeatherHour[] = rows.slice(0, 12).map((row) => {
+  const rows = (raw.weather ?? []).flatMap((day) => (day.hourly ?? []).map((row) => ({ day: day.date, row }))).slice(0, 24);
+  const hourly: WeatherHour[] = rows.map(({ day, row }) => {
     const hh = String(row.time ?? "0").padStart(4, "0");
     const h = Number(hh.slice(0, -2)) || 0;
-    const iso = new Date();
-    iso.setHours(h, 0, 0, 0);
+    const iso = day ? new Date(`${day}T${String(h).padStart(2, "0")}:00:00Z`) : new Date();
+    if (!day) iso.setHours(h, 0, 0, 0);
     const mapped = descInfo(row.weatherDesc?.[0]?.value || desc, isNightHours(h));
     return {
       time: iso.toISOString(),
       temp: Math.round(Number(row.tempC ?? temp)),
       icon: mapped.icon,
       precip: Number(row.precipMM ?? 0),
+      precipChance: null,
+      wind: null,
     };
   });
   return {
@@ -214,7 +225,8 @@ function fromWttr(raw: Wttr, city: string, tz: string): WeatherNow {
     hero: info.hero,
     tone: info.tone,
     night,
-    hourly: hourly.length ? hourly : [{ time: new Date().toISOString(), temp: Math.round(temp), icon: info.icon, precip: 0 }],
+    aqi: null,
+    hourly: nextForecastHours(hourly.length ? hourly : [{ time: new Date().toISOString(), temp: Math.round(temp), icon: info.icon, precip: 0, precipChance: null, wind: null }]),
     ts: Date.now(),
   };
 }
@@ -223,18 +235,26 @@ async function loadWeather(lat: number, lon: number, tz: string, city: string): 
   const om =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&current=temperature_2m,wind_speed_10m,weather_code` +
-    `&hourly=temperature_2m,rain,snowfall,weather_code` +
-    `&timezone=${encodeURIComponent(tz)}&forecast_days=2`;
+    `&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m` +
+    `&timezone=${encodeURIComponent(tz)}&forecast_days=2&timeformat=unixtime&wind_speed_unit=ms`;
+  const air =
+    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}` +
+    `&current=european_aqi&timezone=${encodeURIComponent(tz)}`;
   const met = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
   const wttr = `https://wttr.in/${lat},${lon}?format=j1&lang=ru`;
   try {
-    return await Promise.any([
-      fetchJson<OpenMeteo>(om, 2200).then((raw) => fromOpenMeteo(raw, city, tz)),
-      fetchJson<MetNo>(met, 2200).then((raw) => fromMetNo(raw, city, tz)),
+    const [raw, airRaw] = await Promise.all([
+      fetchJson<OpenMeteo>(om, 4500),
+      fetchJson<OpenMeteoAir>(air, 3000).catch(() => null),
     ]);
+    const value = airRaw?.current?.european_aqi;
+    return fromOpenMeteo(raw, city, tz, Number.isFinite(value) ? Math.round(value!) : null);
   } catch {
-    const raw = await fetchJson<Wttr>(wttr, 2500);
-    return fromWttr(raw, city, tz);
+    try {
+      return fromMetNo(await fetchJson<MetNo>(met, 3500), city, tz);
+    } catch {
+      return fromWttr(await fetchJson<Wttr>(wttr, 4000), city, tz);
+    }
   }
 }
 
@@ -246,7 +266,7 @@ export const getWeather = createServerFn({ method: "POST" })
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
       throw new Error("Invalid coordinates");
     }
-    const key = `wx6:${lat.toFixed(3)},${lon.toFixed(3)}:${data.tz}`;
+    const key = `wx7:${lat.toFixed(3)},${lon.toFixed(3)}:${data.tz}`;
     return cached(key, 30 * 60_000, () => loadWeather(lat, lon, data.tz || "Europe/Moscow", data.city), "weather");
   });
 

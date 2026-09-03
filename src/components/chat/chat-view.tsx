@@ -148,7 +148,7 @@ export function ChatView() {
         <div className="flex min-h-[60dvh] flex-col">
           <div className="flex-1 space-y-2">
             {messages.length === 0 ? (
-              <div className="rounded-2xl border border-border bg-card px-4 py-6 text-center">
+              <div className="rounded-lg border border-border bg-card px-4 py-6 text-center">
                 <p className="text-sm font-semibold">Спросите агента</p>
                 {aiOff ? (
                   <>
@@ -170,7 +170,7 @@ export function ChatView() {
                           <button
                             key={q}
                             type="button"
-                            className="rounded-full bg-muted px-3 py-2 text-sm"
+                            className="rounded-md bg-muted px-3 py-2 text-sm"
                             onClick={() => submit(q)}
                           >
                             {q}
@@ -186,7 +186,7 @@ export function ChatView() {
                 <div
                   key={m.id}
                   className={cn(
-                    "max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-snug whitespace-pre-wrap",
+                    "max-w-[92%] rounded-lg px-3.5 py-2.5 text-sm leading-snug whitespace-pre-wrap",
                     m.role === "user" ? "ml-auto bg-foreground text-background" : "bg-card text-foreground",
                   )}
                 >
@@ -195,7 +195,7 @@ export function ChatView() {
               ))
             )}
             {send.isPending ? (
-              <div className="w-fit rounded-2xl bg-card px-3.5 py-2.5 text-xs text-muted-foreground">Думает…</div>
+              <div className="w-fit rounded-lg bg-card px-3.5 py-2.5 text-xs text-muted-foreground">Думает…</div>
             ) : null}
             <div ref={endRef} />
           </div>
@@ -211,7 +211,7 @@ export function ChatView() {
               }}
               placeholder={aiOff ? "Сначала включите AI в Настройках" : "Сообщение агенту…"}
               disabled={aiOff || send.isPending}
-              className="flex h-11 min-w-0 flex-1 rounded-full border border-border bg-card px-4 text-sm outline-none disabled:opacity-60"
+              className="flex h-10 min-w-0 flex-1 rounded-md border border-border bg-card px-3.5 text-sm outline-none disabled:opacity-60"
             />
             <Button
               variant="secondary"

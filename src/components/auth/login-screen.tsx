@@ -97,9 +97,9 @@ export function LoginScreen() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6">
-      <BrandMark size={56} className="mx-auto" />
-      <h1 className="mt-4 text-center text-2xl font-semibold tracking-tight">{APP_NAME}</h1>
-      <p className="mt-2 text-center text-base text-muted-foreground">
+      <BrandMark size={48} className="mx-auto" />
+      <h1 className="mt-3 text-center text-xl font-semibold tracking-tight">{APP_NAME}</h1>
+      <p className="mt-2 text-center text-sm text-muted-foreground">
         {mode === "invite" ? "Вход по семейному инвайту" : "Face ID — основной вход, PIN — запасной"}
       </p>
 

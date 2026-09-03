@@ -102,7 +102,7 @@ export function DigestView() {
         }
       />
       <Page>
-        {snap.isLoading && live.isLoading ? <Skeleton className="h-32 rounded-2xl" /> : null}
+        {snap.isLoading && live.isLoading ? <Skeleton className="h-32 rounded-lg" /> : null}
         <BriefingCard blocks={briefBlocks} loading={false} />
         {ranked.length
           ? ranked.slice(0, 24).map((item) => (

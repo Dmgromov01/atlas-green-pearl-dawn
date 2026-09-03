@@ -51,7 +51,7 @@ export function FamilyCard() {
       <p className="text-sm leading-snug text-muted-foreground">
         Вы {me ? roleLabel(me.role) : "гость"}. Общего пароля нет — только личный Face ID / PIN и одноразовый инвайт.
       </p>
-      <div className="rounded-2xl bg-muted px-3 py-2 text-sm">
+      <div className="rounded-md bg-muted px-3 py-2 text-sm">
         {gcal.data?.connected ? (
           <span className="font-semibold text-accent">
             Google Calendar · {gcal.data.familyId ? "семейный календарь выбран" : "подключен, семейный не выбран"}

@@ -80,7 +80,7 @@ export function AiAccessCard() {
             type="button"
             disabled={m === "shared" && !user.allowGlobalAi}
             onClick={() => mode.mutate(m)}
-            className={`h-9 rounded-full text-xs font-bold ${
+            className={`h-9 rounded-md text-xs font-bold ${
               user.aiMode === m ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
@@ -101,7 +101,7 @@ export function AiAccessCard() {
             key={p.id}
             type="button"
             onClick={() => setProvider(p.id)}
-            className={`h-8 rounded-full px-3 text-[11px] font-bold ${
+            className={`h-8 rounded-md px-3 text-[11px] font-bold ${
               provider === p.id ? "bg-foreground text-background" : "bg-muted text-muted-foreground"
             }`}
           >

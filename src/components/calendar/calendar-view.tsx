@@ -107,7 +107,7 @@ export function CalendarView() {
                 haptic();
               }}
               className={cn(
-                "flex w-11 shrink-0 flex-col items-center rounded-2xl border py-2",
+                "flex w-11 shrink-0 flex-col items-center rounded-md border py-2",
                 d.key === selected
                   ? "border-accent bg-accent text-accent-foreground"
                   : "border-border bg-card text-foreground",
@@ -162,7 +162,7 @@ export function CalendarView() {
                 const hint = sourceHint(ev);
                 const canDelete = ev.source === "local" || ev.source === "shared";
                 return (
-                  <div key={ev.id} className="flex items-start gap-2 rounded-2xl bg-muted px-3 py-2">
+                  <div key={ev.id} className="flex items-start gap-2 rounded-md bg-muted px-3 py-2">
                     <span className="mt-0.5 w-16 shrink-0 text-xs font-extrabold tabular-nums text-accent">
                       {formatEventTime(ev.start, ev.allDay)}
                     </span>

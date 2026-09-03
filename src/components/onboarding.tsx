@@ -28,9 +28,9 @@ export function Onboarding() {
         finish();
       }}
     >
-      <BrandMark size={72} className="mx-auto" />
-      <h1 className="mt-3 text-center text-2xl font-semibold tracking-tight text-foreground">{APP_NAME}</h1>
-      <p className="mx-auto mt-1 max-w-sm text-center text-base leading-relaxed text-muted-foreground">
+      <BrandMark size={56} className="mx-auto" />
+      <h1 className="mt-3 text-center text-xl font-semibold tracking-tight text-foreground">{APP_NAME}</h1>
+      <p className="mx-auto mt-1 max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
         Погода, задачи, дайджест и переводчик.
       </p>
       <label className="mt-8 block text-sm font-semibold text-muted-foreground" htmlFor="onboard-name">

@@ -71,7 +71,7 @@ export function SourcesView() {
                       haptic();
                       remove(s.id);
                     }}
-                    className="grid size-9 place-items-center rounded-xl bg-muted text-muted-foreground"
+                    className="grid size-9 place-items-center rounded-md bg-muted text-muted-foreground"
                     aria-label="Удалить"
                   >
                     <Trash2 className="size-4" />

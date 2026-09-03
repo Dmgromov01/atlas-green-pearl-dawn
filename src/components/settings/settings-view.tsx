@@ -247,7 +247,7 @@ export function SettingsView() {
             <button
               key={`${c.lat}-${c.lon}`}
               type="button"
-              className="min-h-11 w-full rounded-full bg-muted px-3 py-2 text-left text-base"
+              className="min-h-10 w-full rounded-md bg-muted px-3 py-2 text-left text-sm"
               onClick={() => {
                 s.setCity({ name: c.name, lat: c.lat, lon: c.lon, tz: c.tz, country: c.country });
                 setQ(c.name);
@@ -301,9 +301,10 @@ export function SettingsView() {
             onClick={async () => {
               haptic();
               try {
-                await refreshHubData({ data: { tags: ["weather", "digest", "ics"] } });
+                await refreshHubData({ data: { tags: ["weather", "rates", "digest", "ics"] } });
                 await Promise.all([
                   queryClient.invalidateQueries({ queryKey: ["weather"] }),
+                  queryClient.invalidateQueries({ queryKey: ["rates"] }),
                   queryClient.invalidateQueries({ queryKey: ["digest"] }),
                   queryClient.invalidateQueries({ queryKey: ["brief"] }),
                   queryClient.invalidateQueries({ queryKey: ["ics"] }),

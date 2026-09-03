@@ -33,7 +33,7 @@ export function BriefingCard({
   });
 
   if (loading) {
-    return <Skeleton className="h-32 rounded-2xl" />;
+    return <Skeleton className="h-32 rounded-lg" />;
   }
   if (!ready.length) return null;
 

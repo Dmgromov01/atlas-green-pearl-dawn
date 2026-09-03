@@ -29,15 +29,15 @@ export function ServiceRow({
       onClick={onClick}
       aria-expanded={expanded}
       className={cn(
-        "relative flex min-h-14 w-full items-center gap-3 px-3.5 py-2.5 text-left",
+        "relative flex min-h-13 w-full items-center gap-2.5 px-3.5 py-2 text-left",
         onClick && "transition-colors duration-150 hover:bg-muted/60",
       )}
     >
       <IconWell accent={accent}>{icon}</IconWell>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-base font-semibold leading-snug text-foreground">{title}</div>
+        <div className="truncate text-sm font-semibold leading-snug text-foreground">{title}</div>
         {status ? (
-          <div className="truncate text-sm font-medium leading-snug text-muted-foreground">{status}</div>
+          <div className="truncate text-xs font-medium leading-snug text-muted-foreground">{status}</div>
         ) : null}
       </div>
       {trailing}

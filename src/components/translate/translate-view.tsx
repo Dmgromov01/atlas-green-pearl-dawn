@@ -56,7 +56,7 @@ export function TranslateView() {
       />
       <Page>
         <Card className="p-1.5">
-          <div className="seg !p-0 !bg-transparent">
+          <div className="seg">
           {PAIRS.map((p) => (
             <button
               key={p.id}
@@ -158,13 +158,13 @@ export function TranslateView() {
             Добавить в словарь
           </Button>
           {entries.length === 0 ? (
-            <p className="rounded-2xl bg-muted px-3 py-4 text-center text-xs text-muted-foreground">
+            <p className="rounded-md bg-muted px-3 py-4 text-center text-xs text-muted-foreground">
               Словарь пуст. Сохраните перевод или добавьте пару вручную.
             </p>
           ) : (
             <div className="max-h-72 space-y-2 overflow-y-auto">
               {entries.map((x) => (
-                <div key={x.id} className="rounded-2xl border border-border bg-muted px-3 py-2.5">
+                <div key={x.id} className="rounded-md border border-border bg-muted px-3 py-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="text-sm font-bold break-words">{x.src}</div>
                     <button
