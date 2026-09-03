@@ -55,6 +55,20 @@ export const KNOWN_BOT_TOOLS: Array<{ id: string; label: string }> = [
   { id: "memory_search", label: "Искать в памяти" },
   { id: "message", label: "Писать в мессенджеры" },
   { id: "cron", label: "Планировщик" },
+  { id: "apply_patch", label: "Применять правки кода" },
+  { id: "create_goal", label: "Создавать цели" },
+  { id: "get_goal", label: "Читать цели" },
+  { id: "update_goal", label: "Обновлять цели" },
+  { id: "update_plan", label: "Обновлять план" },
+  { id: "image_generate", label: "Генерировать изображения" },
+  { id: "process", label: "Управлять процессами" },
+  { id: "session_status", label: "Статус сессий" },
+  { id: "sessions_history", label: "История сессий" },
+  { id: "sessions_list", label: "Список сессий" },
+  { id: "sessions_send", label: "Писать в другие сессии" },
+  { id: "sessions_spawn", label: "Создавать сессии" },
+  { id: "sessions_yield", label: "Передавать сессии" },
+  { id: "subagents", label: "Запускать субагентов" },
 ];
 
 export type Binding = {
