@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy, Shield, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { adminAudit, adminDeleteUser, adminListBotAccess, adminListUsers, adminPatchUser } from "@/lib/server/hub-admin";
-import { formatTokenCount, templateLabel } from "@/lib/openclaw/bot-access";
+import { formatTokenCount, peerSecondaryLabel, templateLabel } from "@/lib/openclaw/bot-access";
 import { hubCreateInvite, hubListInvites } from "@/lib/server/hub-auth";
 import { useHub } from "@/lib/stores/hub";
 import { AppShell } from "@/components/shell/app-shell";
@@ -229,7 +229,7 @@ export function AdminView() {
                       </span>
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                      активен · писал {last}
+                      {peerSecondaryLabel(peer)} · активен · писал {last}
                     </div>
                   </div>
                   <div className="shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">

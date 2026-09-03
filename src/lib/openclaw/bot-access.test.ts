@@ -5,6 +5,9 @@ import {
   formatTokenCount,
   maskTelegramId,
   parseOpenClawConfig,
+  parseOriginLabel,
+  parseUserMdIdentity,
+  peerPrimaryLabel,
   permissionsForAgent,
   resolveAgentForPeer,
   sessionPeerId,
@@ -109,4 +112,18 @@ test("helpers", () => {
   assert.equal(sessionPeerId("agent:chat:telegram:direct:8335493342"), "8335493342");
   assert.equal(maskTelegramId("8335493342"), "83…3342");
   assert.equal(formatTokenCount(32394), "32.4k");
+});
+
+test("extracts telegram identity from origin label and USER.md", () => {
+  assert.deepEqual(parseOriginLabel("Dmitry (@Dm_GRM) id:1916536646"), {
+    displayName: "Dmitry",
+    telegramUsername: "Dm_GRM",
+  });
+  assert.deepEqual(parseOriginLabel("Alex G id:8335493342"), {
+    displayName: "Alex G",
+    telegramUsername: null,
+  });
+  assert.equal(peerPrimaryLabel({ displayName: null, telegramUsername: "Dm_GRM", telegramId: "1916536646" }), "@Dm_GRM");
+  assert.equal(peerPrimaryLabel({ displayName: "Alex G", telegramUsername: null, telegramId: "8335493342" }), "Alex G");
+  assert.equal(peerPrimaryLabel({ displayName: null, telegramUsername: null, telegramId: "8335493342" }), "83…3342");
 });

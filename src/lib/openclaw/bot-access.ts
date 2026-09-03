@@ -18,6 +18,8 @@ export type BotModelUsage = {
 export type BotAccessPeer = {
   telegramId: string;
   label: string;
+  displayName: string | null;
+  telegramUsername: string | null;
   agentId: string;
   template: "owner" | "family" | "custom";
   status: "active";
@@ -78,6 +80,7 @@ export type SessionMeta = {
   updatedAt?: number | string;
   lastInteractionAt?: number | string;
   lastActivityAt?: number | string;
+  originLabel?: string;
 };
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
@@ -174,13 +177,14 @@ export function aggregateUsageForPeer(
   telegramId: string,
   agentId: string,
   sessionsByAgent: Record<string, Record<string, SessionMeta>>,
-): { usage: BotModelUsage[]; totals: BotAccessPeer["totals"]; lastInteractionAt: string | null } {
+): { usage: BotModelUsage[]; totals: BotAccessPeer["totals"]; lastInteractionAt: string | null; originLabel: string | null } {
   const sessions = sessionsByAgent[agentId] || {};
   const byModel = new Map<string, BotModelUsage>();
   let inputTokens = 0;
   let outputTokens = 0;
   let estimatedCostUsd = 0;
   let lastMs = 0;
+  let originLabel: string | null = null;
 
   for (const [key, meta] of Object.entries(sessions)) {
     const peer = sessionPeerId(key);
@@ -210,6 +214,7 @@ export function aggregateUsageForPeer(
     outputTokens += out;
     estimatedCostUsd += cost;
 
+    if (!originLabel && meta.originLabel) originLabel = meta.originLabel;
     for (const stamp of [meta.lastInteractionAt, meta.lastActivityAt, meta.updatedAt]) {
       const n = typeof stamp === "number" ? stamp : Number(stamp);
       if (Number.isFinite(n) && n > lastMs) lastMs = n;
@@ -220,6 +225,7 @@ export function aggregateUsageForPeer(
     usage: [...byModel.values()].sort((a, b) => b.inputTokens - a.inputTokens),
     totals: { inputTokens, outputTokens, estimatedCostUsd },
     lastInteractionAt: msToIso(lastMs || undefined),
+    originLabel,
   };
 }
 
@@ -239,19 +245,30 @@ export function buildBotAccessRegistry(input: {
   botName?: string;
   dmPolicy?: string;
   now?: string;
+  userMdByAgent?: Record<string, string>;
+  telegramUsernames?: Record<string, string>;
 }): BotAccessRegistry {
   const allow = input.allowFrom.map(String).filter(Boolean);
   const peers: BotAccessPeer[] = allow.map((telegramId) => {
     const agentId = resolveAgentForPeer(telegramId, input.bindings);
     const { template, permissions, workspace } = permissionsForAgent(agentId, input.agents);
-    const { usage, totals, lastInteractionAt } = aggregateUsageForPeer(
+    const { usage, totals, lastInteractionAt, originLabel } = aggregateUsageForPeer(
       telegramId,
       agentId,
       input.sessionsByAgent,
     );
+    const identity = mergePeerIdentity(
+      parseOriginLabel(originLabel),
+      parseUserMdIdentity(input.userMdByAgent?.[agentId]),
+    );
+    if (!identity.telegramUsername && input.telegramUsernames?.[telegramId]) {
+      identity.telegramUsername = input.telegramUsernames[telegramId].replace(/^@/, "");
+    }
     return {
       telegramId,
-      label: maskTelegramId(telegramId),
+      label: peerPrimaryLabel({ ...identity, telegramId }),
+      displayName: identity.displayName,
+      telegramUsername: identity.telegramUsername,
       agentId,
       template,
       status: "active" as const,
@@ -285,6 +302,7 @@ export function parseSessionsFile(raw: unknown): Record<string, SessionMeta> {
   for (const [key, value] of Object.entries(root)) {
     const row = asRecord(value);
     if (!row) continue;
+    const origin = asRecord(row.origin);
     out[key] = {
       inputTokens: typeof row.inputTokens === "number" ? row.inputTokens : Number(row.inputTokens) || 0,
       outputTokens: typeof row.outputTokens === "number" ? row.outputTokens : Number(row.outputTokens) || 0,
@@ -295,6 +313,7 @@ export function parseSessionsFile(raw: unknown): Record<string, SessionMeta> {
       updatedAt: row.updatedAt as number | string | undefined,
       lastInteractionAt: row.lastInteractionAt as number | string | undefined,
       lastActivityAt: row.lastActivityAt as number | string | undefined,
+      originLabel: origin && typeof origin.label === "string" ? origin.label : undefined,
     };
   }
   return out;
@@ -338,3 +357,50 @@ export function templateLabel(template: BotAccessPeer["template"]): string {
   return "особый";
 }
 
+export type PeerIdentity = {
+  displayName: string | null;
+  telegramUsername: string | null;
+};
+
+/** Parse OpenClaw session origin labels like `Dmitry (@Dm_GRM) id:1916536646`. */
+export function parseOriginLabel(label: string | null | undefined): PeerIdentity {
+  const raw = String(label || "").trim();
+  if (!raw) return { displayName: null, telegramUsername: null };
+  const m = raw.match(/@([A-Za-z0-9_]{4,})/);
+  const telegramUsername = m ? m[1] : null;
+  let display = raw.replace(/\(@[A-Za-z0-9_]+\)/g, " ").replace(/\bid\s*:\s*\d+\b/gi, " ").replace(/\s+/g, " ").trim();
+  if (!display || /^\d+$/.test(display)) display = "";
+  return { displayName: display || null, telegramUsername };
+}
+
+export function parseUserMdIdentity(markdown: string | null | undefined): PeerIdentity {
+  const text = String(markdown || "");
+  const usernameMatch = text.match(/Telegram:\s*@([A-Za-z0-9_]{4,})/i) || text.match(/@([A-Za-z0-9_]{5,})/);
+  const nameMatch = text.match(/\*\*Name:\*\*[ \t]*([^\n]+)/i);
+  let displayName = nameMatch ? nameMatch[1].trim() : null;
+  if (displayName && (/^_+$/.test(displayName) || /optional/i.test(displayName) || /\*\*/.test(displayName))) displayName = null;
+  return { displayName, telegramUsername: usernameMatch ? usernameMatch[1] : null };
+}
+
+export function mergePeerIdentity(...parts: PeerIdentity[]): PeerIdentity {
+  let displayName: string | null = null;
+  let telegramUsername: string | null = null;
+  for (const part of parts) {
+    if (!displayName && part.displayName) displayName = part.displayName;
+    if (!telegramUsername && part.telegramUsername) telegramUsername = part.telegramUsername;
+  }
+  return { displayName, telegramUsername };
+}
+
+export function peerPrimaryLabel(peer: { displayName?: string | null; telegramUsername?: string | null; telegramId: string }): string {
+  if (peer.telegramUsername) return "@" + peer.telegramUsername;
+  if (peer.displayName) return peer.displayName;
+  return maskTelegramId(peer.telegramId);
+}
+
+export function peerSecondaryLabel(peer: { displayName?: string | null; telegramUsername?: string | null; telegramId: string }): string {
+  const bits: string[] = [];
+  if (peer.telegramUsername && peer.displayName) bits.push(peer.displayName);
+  bits.push(maskTelegramId(peer.telegramId));
+  return bits.join(" · ");
+}
