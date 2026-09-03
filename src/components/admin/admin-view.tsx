@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy, Shield, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { adminAudit, adminDeleteUser, adminListUsers, adminPatchUser } from "@/lib/server/hub-admin";
+import { adminAudit, adminDeleteUser, adminListBotAccess, adminListUsers, adminPatchUser } from "@/lib/server/hub-admin";
+import { formatTokenCount, templateLabel } from "@/lib/openclaw/bot-access";
 import { hubCreateInvite, hubListInvites } from "@/lib/server/hub-auth";
 import { useHub } from "@/lib/stores/hub";
 import { AppShell } from "@/components/shell/app-shell";
@@ -49,6 +50,12 @@ export function AdminView() {
     queryKey: ["admin-audit"],
     queryFn: () => adminAudit({ data: { token } }),
     enabled: Boolean(token && me?.role === "admin"),
+  });
+  const botAccess = useQuery({
+    queryKey: ["admin-bot-access"],
+    queryFn: () => adminListBotAccess({ data: { token } }),
+    enabled: Boolean(token && me?.role === "admin"),
+    staleTime: 60_000,
   });
 
   const patch = useMutation({
@@ -179,6 +186,106 @@ export function AdminView() {
             </div>
           </Card>
         ))}
+
+        <Card className="space-y-3 p-4">
+          <SectionLabel>Доступ к боту</SectionLabel>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Telegram @{((botAccess.data?.bot || "@Dmbotmy_bot").replace(/^@/, ""))}. Только просмотр: кто в
+            allowlist, шаблон прав и токены. Чат здесь не ведётся.
+          </p>
+          {botAccess.data?.providersConfigured?.length ? (
+            <p className="text-[11px] text-muted-foreground">
+              Провайдеры: {botAccess.data.providersConfigured.join(", ")}
+              {botAccess.data.dmPolicy ? ` · ${botAccess.data.dmPolicy}` : ""}
+            </p>
+          ) : null}
+          {botAccess.isLoading ? (
+            <p className="text-sm text-muted-foreground">Загружаю реестр бота…</p>
+          ) : null}
+          {botAccess.isError ? (
+            <p className="text-sm text-destructive">
+              {(botAccess.error as Error)?.message || "Не удалось прочитать OpenClaw"}
+            </p>
+          ) : null}
+          {(botAccess.data?.peers ?? []).map((peer) => {
+            const allowed = peer.permissions.filter((p) => p.allowed);
+            const denied = peer.permissions.filter((p) => !p.allowed);
+            const last = peer.lastInteractionAt
+              ? new Date(peer.lastInteractionAt).toLocaleString("ru-RU", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "нет сессий";
+            return (
+              <div key={peer.telegramId} className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold">
+                      {peer.label}{" "}
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        · {templateLabel(peer.template)} · агент {peer.agentId}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      активен · писал {last}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                    <div>
+                      {formatTokenCount(peer.totals.inputTokens)} → {formatTokenCount(peer.totals.outputTokens)}
+                    </div>
+                    <div>
+                      {peer.totals.estimatedCostUsd > 0
+                        ? `~$${peer.totals.estimatedCostUsd.toFixed(3)}`
+                        : "—"}
+                    </div>
+                  </div>
+                </div>
+                {peer.usage.length ? (
+                  <div className="space-y-0.5 text-[11px] text-muted-foreground">
+                    {peer.usage.map((u) => (
+                      <div key={`${u.provider}|${u.model}`} className="flex justify-between gap-2">
+                        <span className="truncate">
+                          {u.provider}/{u.model}
+                        </span>
+                        <span className="shrink-0 tabular-nums">
+                          {formatTokenCount(u.inputTokens)} → {formatTokenCount(u.outputTokens)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">Токены чата пока не зафиксированы.</p>
+                )}
+                <div className="grid gap-2 text-[11px] sm:grid-cols-2">
+                  <div>
+                    <div className="mb-0.5 font-semibold text-foreground">Можно</div>
+                    <ul className="space-y-0.5 text-muted-foreground">
+                      {allowed.map((p) => (
+                        <li key={p.id}>✓ {p.label}</li>
+                      ))}
+                      {!allowed.length ? <li>—</li> : null}
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="mb-0.5 font-semibold text-foreground">Нельзя</div>
+                    <ul className="space-y-0.5 text-muted-foreground">
+                      {denied.slice(0, 8).map((p) => (
+                        <li key={p.id}>✗ {p.label}</li>
+                      ))}
+                      {!denied.length ? <li>—</li> : null}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {!botAccess.isLoading && !botAccess.isError && !(botAccess.data?.peers ?? []).length ? (
+            <p className="text-sm text-muted-foreground">В allowlist бота пока никого нет.</p>
+          ) : null}
+        </Card>
 
         <Card className="p-3">
           <SectionLabel className="mb-2">Аудит</SectionLabel>

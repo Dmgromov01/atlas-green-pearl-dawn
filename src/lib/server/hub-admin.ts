@@ -37,3 +37,11 @@ export const adminAudit = createServerFn({ method: "POST" })
     const { auditAdmin } = await import("./hub-admin.server");
     return auditAdmin(data.token);
   });
+
+/** Read-only Telegram bot access + token usage (OpenClaw). No chat, no writes. */
+export const adminListBotAccess = createServerFn({ method: "POST" })
+  .validator((data: { token: string }) => data)
+  .handler(async ({ data }) => {
+    const { listBotAccessAdmin } = await import("./bot-access.server");
+    return listBotAccessAdmin(data.token);
+  });
